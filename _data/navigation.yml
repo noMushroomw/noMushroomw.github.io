@@ -4,9 +4,11 @@ main:
   #  url: /publications/
 
   - title: "Projects"
-    url: /Projectss/    
+    url: /projects/    
 
   #- title: "Teaching"
   #  url: /teaching/    
 
+  - title: "CV"
+    url: /cv/
 
