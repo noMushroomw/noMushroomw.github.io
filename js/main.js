@@ -12,6 +12,17 @@
     const navLinks = document.querySelectorAll('.nav__link');
     const sections = document.querySelectorAll('.section, .hero');
     const fadeElements = document.querySelectorAll('.fade-up');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // ----- Theme Toggle -----
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+            var current = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+        });
+    }
 
     // ----- Navigation: Show/Hide on Scroll -----
     let lastScrollY = window.scrollY;
