@@ -66,7 +66,6 @@
     transition:background-color .25s ease, color .25s ease;
   }
 
-  /* Header (matches the site) */
   .site-header{
     position:sticky; top:0; z-index:30;
     backdrop-filter:saturate(180%) blur(10px);
@@ -101,15 +100,14 @@
   .title{ font-family:var(--font-serif); font-weight:600; font-size:1.85rem; text-align:center; }
   .subtitle{ text-align:center; color:var(--text-muted); font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; margin-top:1px; }
 
-  .hud{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .hud{ display:flex; gap:9px; flex-wrap:wrap; justify-content:center; }
   .pill{
-    display:flex; align-items:center; gap:8px; padding:7px 14px;
+    display:flex; align-items:center; gap:8px; padding:7px 13px;
     background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow);
   }
   .pill .label{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-faint); }
-  .pill .value{ font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; min-width:1.4ch; text-align:right; color:var(--accent); }
+  .pill .value{ font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; min-width:1.4ch; text-align:right; color:var(--accent); }
 
-  /* Leaderboard — fixed top-right on wide screens, in-flow otherwise */
   .leaderboard{
     width:min(92vw,560px);
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
@@ -117,20 +115,21 @@
   }
   .leaderboard h3{
     font-family:var(--font-sans); font-size:.72rem; font-weight:700; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--accent); margin-bottom:8px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:4px;
   }
+  .leaderboard .lb-sub{ font-size:.68rem; color:var(--text-faint); margin-bottom:8px; }
   .lb-list{ list-style:none; }
-  .lb-item{ display:flex; align-items:center; gap:10px; padding:5px 0; font-size:.9rem; }
+  .lb-item{ display:flex; align-items:center; gap:8px; padding:5px 0; font-size:.88rem; }
   .lb-item + .lb-item{ border-top:1px solid var(--border); }
-  .lb-rank{ width:16px; color:var(--text-faint); font-variant-numeric:tabular-nums; }
-  .lb-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .lb-score{ font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .lb-rank{ width:15px; flex-shrink:0; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+  .lb-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lb-score{ flex-shrink:0; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .lb-time{ flex-shrink:0; min-width:36px; text-align:right; color:var(--text-faint); font-size:.78rem; font-variant-numeric:tabular-nums; }
   .lb-empty{ color:var(--text-faint); font-size:.85rem; }
   @media (min-width:1024px){
-    .leaderboard{ position:fixed; top:72px; right:24px; width:220px; z-index:15; }
+    .leaderboard{ position:fixed; top:72px; right:24px; width:244px; z-index:15; }
   }
 
-  /* Board */
   .stage{
     position:relative; width:min(80vmin,540px); aspect-ratio:1/1;
     border-radius:18px; padding:12px;
@@ -139,7 +138,6 @@
   }
   canvas{ display:block; width:100%; height:100%; border-radius:10px; touch-action:none; }
 
-  /* In-board overlay */
   .overlay{
     position:absolute; inset:12px; border-radius:10px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center;
@@ -183,7 +181,6 @@
   .btn.ghost{ background:transparent; color:var(--accent); border:1px solid var(--border); box-shadow:none; }
   .btn.ghost:hover{ background:var(--surface-2); }
 
-  /* Name-entry modal */
   .modal-scrim{
     position:fixed; inset:0; z-index:40; display:none;
     align-items:center; justify-content:center; padding:20px;
@@ -210,7 +207,7 @@
   footer.hint b{ color:var(--text); font-weight:600; }
   .ai-toggle{ display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--text-muted); cursor:pointer; }
   .ai-toggle input{ accent-color:var(--accent); width:14px; height:14px; }
-  .ai-toggle .soon{ color:var(--text-faint); }
+  .ai-toggle .meta{ color:var(--text-faint); }
 
   @media (max-width:520px){ .subtitle{ display:none; } }
   @media (prefers-reduced-motion: reduce){
@@ -240,12 +237,14 @@
 
     <div class="hud">
       <div class="pill"><span class="label">Score</span><span class="value" id="score">0</span></div>
+      <div class="pill"><span class="label">Time</span><span class="value" id="time">0:00</span></div>
       <div class="pill"><span class="label">Best</span><span class="value" id="best">0</span></div>
       <div class="pill"><span class="label">Speed</span><span class="value" id="speed">1</span></div>
     </div>
 
     <aside class="leaderboard" aria-label="Top scores">
       <h3>Top 5</h3>
+      <div class="lb-sub">by score, then fastest time</div>
       <ol class="lb-list" id="lb-list"><li class="lb-empty">No scores yet — be the first.</li></ol>
     </aside>
 
@@ -264,15 +263,14 @@
 
     <footer class="hint">
       <div><b>WASD</b> / <b>Arrows</b> to steer · <b>Space</b> to pause · <b>R</b> to restart</div>
-      <label class="ai-toggle"><input type="checkbox" id="ai-checkbox"> Watch the AI play <span class="soon">(coming soon)</span></label>
+      <label class="ai-toggle"><input type="checkbox" id="ai-checkbox"> Autopilot <span class="meta">· A* + Hamiltonian cycle safety</span></label>
     </footer>
   </main>
 
-  <!-- Name-entry modal (shown when a run lands in the Top 5) -->
   <div class="modal-scrim" id="name-modal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="name-title">
       <h2 id="name-title">You made the Top 5!</h2>
-      <p>You scored <b id="name-score">0</b>. Add your name to the leaderboard.</p>
+      <p>Score <b id="name-score">0</b> in <b id="name-time">0:00</b>. Add your name (optional).</p>
       <input id="name-input" type="text" maxlength="14" placeholder="Your name" autocomplete="off" spellcheck="false">
       <div class="row">
         <button class="btn ghost" id="name-skip" type="button">Skip</button>
@@ -290,6 +288,7 @@
   const ctx = canvas.getContext("2d");
 
   const scoreEl = document.getElementById("score");
+  const timeEl  = document.getElementById("time");
   const bestEl  = document.getElementById("best");
   const speedEl = document.getElementById("speed");
   const overlay = document.getElementById("overlay");
@@ -298,87 +297,181 @@
   const ovBtn   = document.getElementById("ov-btn");
   const stage   = document.getElementById("stage");
 
-  // safe localStorage (private mode / disabled storage can throw)
   const store = {
     get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : v; }catch(e){ return d; } },
     set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
   };
 
+  const fmtTime = (sec) => { const m = Math.floor(sec/60), s = Math.floor(sec%60); return m + ":" + String(s).padStart(2,"0"); };
+
   /* ---------- theme-aware canvas palette ---------- */
   const THEMES = {
     light: {
-      glow:false,
-      base:"#ffffff",
-      boardA:"#f6f8fd", boardB:"#eef2fa",
-      grid:"rgba(43,95,217,0.06)",
-      vignette:"rgba(30,41,82,0.06)",
+      glow:false, base:"#ffffff", boardA:"#f6f8fd", boardB:"#eef2fa",
+      grid:"rgba(43,95,217,0.06)", vignette:"rgba(30,41,82,0.06)",
       snakeA:"#60a5fa", snakeB:"#2b5fd9", snakeC:"#4f46e5",
       headA:"#cfe0ff", headB:"#2b5fd9", headC:"#1e3a8a",
       food:["#fecdd3","#fb7185","#e11d48"], foodGlow:"244,63,94",
-      ring:"43,95,217", eyeDark:"#0b1f3a",
-      particleA:"59,130,246", particleB:"79,70,229"
+      ring:"43,95,217", eyeDark:"#0b1f3a", particleA:"59,130,246", particleB:"79,70,229"
     },
     dark: {
-      glow:true,
-      base:"#070a16",
-      boardA:"#0d1326", boardB:"#080b16",
-      grid:"rgba(116,162,255,0.06)",
-      vignette:"rgba(0,0,0,0.45)",
+      glow:true, base:"#070a16", boardA:"#0d1326", boardB:"#080b16",
+      grid:"rgba(116,162,255,0.06)", vignette:"rgba(0,0,0,0.45)",
       snakeA:"#5eead4", snakeB:"#22d3ee", snakeC:"#818cf8",
       headA:"#aef6ff", headB:"#22d3ee", headC:"#0e7490",
       food:["#ffd1d8","#fb7185","#e11d48"], foodGlow:"244,63,94",
-      ring:"94,234,212", eyeDark:"#06121a",
-      particleA:"52,211,153", particleB:"34,211,238"
+      ring:"94,234,212", eyeDark:"#06121a", particleA:"52,211,153", particleB:"34,211,238"
     }
   };
   let TH = THEMES.light;
   const currentTheme = () => document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 
-  /* ---------- sizing ---------- */
-  let cell = 10, cssSize = 540, dpr = 1;
-  const bgCanvas = document.createElement("canvas");
-  const bgCtx = bgCanvas.getContext("2d");
-
-  function resize(){
-    const rect = canvas.getBoundingClientRect();
-    cssSize = Math.max(1, Math.min(rect.width, rect.height));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width  = Math.round(cssSize * dpr);
-    canvas.height = Math.round(cssSize * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cell = cssSize / GRID;
-    buildBackground();
-  }
-  window.addEventListener("resize", resize);
-
-  function buildBackground(){
-    bgCanvas.width  = canvas.width;
-    bgCanvas.height = canvas.height;
-    bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const g = bgCtx.createLinearGradient(0,0,cssSize,cssSize);
-    g.addColorStop(0, TH.boardA); g.addColorStop(1, TH.boardB);
-    bgCtx.fillStyle = g; bgCtx.fillRect(0,0,cssSize,cssSize);
-
-    bgCtx.lineWidth = 1; bgCtx.strokeStyle = TH.grid; bgCtx.beginPath();
-    for(let i=1;i<GRID;i++){
-      const p = Math.round(i*cell)+0.5;
-      bgCtx.moveTo(p,0); bgCtx.lineTo(p,cssSize);
-      bgCtx.moveTo(0,p); bgCtx.lineTo(cssSize,p);
+  /* ---------- Hamiltonian cycle (哈密顿回路) ----------
+     A single closed loop visiting every cell once. Used by the autopilot as a
+     guaranteed-safe fallback route when chasing the food would not be safe. */
+  let cyc = null, nextCell = null;
+  const NCELLS = GRID * GRID;
+  function buildCycle(){
+    const W = GRID, H = GRID;
+    cyc = new Int32Array(W*H);
+    let pos = 0;
+    cyc[0] = pos++;                                          // (0,0)
+    for(let x=0; x<W; x++){
+      if(x % 2 === 0){ for(let y=1; y<=H-1; y++) cyc[y*W + x] = pos++; }
+      else           { for(let y=H-1; y>=1; y--) cyc[y*W + x] = pos++; }
     }
-    bgCtx.stroke();
-
-    const v = bgCtx.createRadialGradient(cssSize/2,cssSize/2,cssSize*0.2, cssSize/2,cssSize/2,cssSize*0.72);
-    v.addColorStop(0,"rgba(0,0,0,0)"); v.addColorStop(1, TH.vignette);
-    bgCtx.fillStyle = v; bgCtx.fillRect(0,0,cssSize,cssSize);
+    cyc[0*W + (W-1)] = pos++;                                // (W-1,0)
+    for(let x=W-2; x>=1; x--) cyc[0*W + x] = pos++;          // row 0 leftward -> closes loop
+    const posToCell = new Int32Array(NCELLS);
+    for(let id=0; id<NCELLS; id++) posToCell[cyc[id]] = id;
+    nextCell = new Int32Array(NCELLS);
+    for(let id=0; id<NCELLS; id++) nextCell[id] = posToCell[(cyc[id]+1) % NCELLS];
   }
+
+  /* ---------- grid helpers & search ---------- */
+  const cid = (x,y) => y*GRID + x;
+  const inb = (x,y) => x>=0 && y>=0 && x<GRID && y<GRID;
+  const STEP = [[0,-1],[0,1],[-1,0],[1,0]];
+
+  // Shortest path from (sx,sy) to (gx,gy) avoiding `blocked`; returns array of cell ids
+  // [firstStep .. goal], or null. The goal cell is always allowed.
+  function bfsPath(sx,sy, gx,gy, blocked){
+    const start = cid(sx,sy), goal = cid(gx,gy);
+    if(start === goal) return [];
+    const prev = new Int32Array(NCELLS).fill(-1);
+    const seen = new Uint8Array(NCELLS);
+    const q = [start]; seen[start] = 1; let qi = 0;
+    while(qi < q.length){
+      const cur = q[qi++], cx = cur % GRID, cy = (cur/GRID)|0;
+      for(const [dx,dy] of STEP){
+        const nx = cx+dx, ny = cy+dy;
+        if(!inb(nx,ny)) continue;
+        const nId = cid(nx,ny);
+        if(seen[nId]) continue;
+        if(blocked[nId] && nId !== goal) continue;
+        seen[nId] = 1; prev[nId] = cur;
+        if(nId === goal){ const path=[]; let c=goal; while(c!==start){ path.push(c); c=prev[c]; } path.reverse(); return path; }
+        q.push(nId);
+      }
+    }
+    return null;
+  }
+  function reachable(sx,sy, gx,gy, blocked){ return bfsPath(sx,sy,gx,gy,blocked) !== null; }
+
+  // Count free cells reachable from (sx,sy) (body except tail is blocked).
+  function floodFree(sx,sy, snk){
+    const blocked = new Uint8Array(NCELLS);
+    for(let i=0;i<snk.length-1;i++) blocked[cid(snk[i].x,snk[i].y)] = 1; // tail vacates
+    const start = cid(sx,sy);
+    if(blocked[start]) return 0;
+    const seen = new Uint8Array(NCELLS); const st = [start]; seen[start]=1; let cnt=0;
+    while(st.length){
+      const c = st.pop(); cnt++;
+      const cx = c%GRID, cy=(c/GRID)|0;
+      for(const [dx,dy] of STEP){ const nx=cx+dx, ny=cy+dy; if(!inb(nx,ny)) continue; const nId=cid(nx,ny); if(seen[nId]||blocked[nId]) continue; seen[nId]=1; st.push(nId); }
+    }
+    return cnt;
+  }
+  function dirTo(head, id){ const tx=id%GRID, ty=(id/GRID)|0, dx=tx-head.x, dy=ty-head.y;
+    if(dx===1) return "right"; if(dx===-1) return "left"; if(dy===1) return "down"; if(dy===-1) return "up"; return null; }
+
+  // Snake after eating along `path` (cell ids, ending on the food): body grows by 1.
+  function snakeAfterEat(snk, path){
+    const L = snk.length, traj = [];
+    for(let i=path.length-1;i>=0;i--) traj.push(path[i]);       // food first
+    for(const s of snk) traj.push(cid(s.x,s.y));
+    return traj.slice(0, L+1).map(id => ({x:id%GRID, y:(id/GRID)|0}));
+  }
+  function canReachTail(body){
+    const L = body.length, h = body[0], t = body[L-1];
+    const blocked = new Uint8Array(NCELLS);
+    for(let i=0;i<L-1;i++) blocked[cid(body[i].x,body[i].y)] = 1;  // tail is the target, leave it free
+    return reachable(h.x,h.y, t.x,t.y, blocked);
+  }
+  // Would moving the head to (nx,ny) (no growth) still leave a path to the tail?
+  function keepsTailPath(snk, nx, ny){
+    const L = snk.length, body = [{x:nx,y:ny}];
+    for(let i=0;i<L-1;i++) body.push(snk[i]);                      // drop old tail
+    const h = body[0], t = body[body.length-1];
+    const blocked = new Uint8Array(NCELLS);
+    for(let i=0;i<body.length-1;i++) blocked[cid(body[i].x,body[i].y)] = 1;
+    return reachable(h.x,h.y, t.x,t.y, blocked);
+  }
+
+  /* ---------- Autopilot: A* to the food, guarded by a tail-reachability check,
+     with the Hamiltonian cycle / largest-space move as the safe fallback. ---------- */
+  const AutoAgent = {
+    enabled: false,
+    nextMove(view){
+      if(!nextCell) buildCycle();
+      const snk = view.snake, food = view.food;
+      const head = snk[0], tail = snk[snk.length-1], L = snk.length;
+      const tailId = cid(tail.x, tail.y);
+
+      const blockedNoTail = new Uint8Array(NCELLS);
+      for(let i=0;i<L-1;i++) blockedNoTail[cid(snk[i].x,snk[i].y)] = 1;
+      const blockedAll = new Uint8Array(NCELLS);
+      for(let i=0;i<L;i++)   blockedAll[cid(snk[i].x,snk[i].y)] = 1;
+
+      // 1) Head straight for the food if it's safe to do so.
+      if(food){
+        const path = bfsPath(head.x, head.y, food.x, food.y, blockedNoTail);
+        if(path && path.length){
+          if(canReachTail(snakeAfterEat(snk, path))) return dirTo(head, path[0]);
+        }
+      }
+
+      // 2) Safe survival: prefer following the Hamiltonian cycle when its next cell is safe.
+      const headId = cid(head.x, head.y);
+      const cn = nextCell[headId];
+      if((blockedAll[cn] === 0 || cn === tailId) && keepsTailPath(snk, cn%GRID, (cn/GRID)|0)) return dirTo(head, cn);
+
+      // 3) Otherwise move to the neighbour that keeps the most open space (and a path to the tail).
+      let best = null, bestScore = -1;
+      for(const [dx,dy] of STEP){
+        const nx = head.x+dx, ny = head.y+dy;
+        if(!inb(nx,ny)) continue;
+        const nId = cid(nx,ny);
+        if(blockedAll[nId] !== 0 && nId !== tailId) continue;
+        const score = (keepsTailPath(snk,nx,ny) ? 1e6 : 0) + floodFree(nx,ny, snk);
+        if(score > bestScore){ bestScore = score; best = dirTo(head, nId); }
+      }
+      return best;   // null only if genuinely boxed in
+    }
+  };
+  function buildAgentView(){ return { snake:snake, food: food ? {x:food.x,y:food.y} : null, dir:{x:dir.x,y:dir.y} }; }
+  const aiCheckbox = document.getElementById("ai-checkbox");
+  aiCheckbox.addEventListener("change", (e)=>{
+    AutoAgent.enabled = e.target.checked;
+    if(AutoAgent.enabled && state !== STATE.PLAYING) start();    // hand the autopilot a running game
+  });
 
   /* ---------- game state ---------- */
   const STATE = { READY:"ready", PLAYING:"playing", PAUSED:"paused", OVER:"over" };
   let state = STATE.READY;
   let snake, prevSnake, dir, nextDir, food, score, best, grew, won;
   let tickMs, baseTick = 115, minTick = 56;
-  let acc = 0, last = 0;
+  let acc = 0, last = 0, elapsed = 0;
   let particles = [], rings = [];
   let shake = 0, foodPop = 0, eatFlash = 0;
 
@@ -391,8 +484,8 @@
     prevSnake = snake.map(s => ({...s}));
     dir = {x:1,y:0}; nextDir = {x:1,y:0};
     score = 0; grew = false; won = false; tickMs = baseTick;
-    particles = []; rings = []; shake = 0; eatFlash = 0; acc = 0;
-    spawnFood(); updateHud();
+    particles = []; rings = []; shake = 0; eatFlash = 0; acc = 0; elapsed = 0;
+    spawnFood(); updateHud(); timeEl.textContent = "0:00";
   }
 
   function spawnFood(){
@@ -406,13 +499,12 @@
   }
 
   function updateHud(){
-    scoreEl.textContent = score;
-    bestEl.textContent = best;
+    scoreEl.textContent = score; bestEl.textContent = best;
     const level = Math.round((baseTick - tickMs) / ((baseTick - minTick)/9)) + 1;
     speedEl.textContent = Math.max(1, Math.min(10, level));
   }
 
-  /* ---------- leaderboard (Top 5, persisted) ---------- */
+  /* ---------- leaderboard: name (optional) + score + time ---------- */
   const LB_KEY = "snake64.leaderboard", MAX_LB = 5;
   let leaderboard = loadLeaderboard();
 
@@ -421,28 +513,27 @@
       const raw = store.get(LB_KEY, null);
       if(!raw) return [];
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr.filter(e => e && typeof e.score === "number").slice(0, MAX_LB) : [];
+      if(!Array.isArray(arr)) return [];
+      return arr.filter(e => e && typeof e.score === "number")
+                .map(e => ({ name: e.name || "Anonymous", score: e.score, time: typeof e.time === "number" ? e.time : null }))
+                .sort(cmp).slice(0, MAX_LB);
     }catch(e){ return []; }
   }
+  function cmp(a, b){ if(b.score !== a.score) return b.score - a.score; return (a.time==null?Infinity:a.time) - (b.time==null?Infinity:b.time); }
   function saveLeaderboard(){ store.set(LB_KEY, JSON.stringify(leaderboard)); }
-  function qualifies(sc){
-    if(sc <= 0) return false;
-    if(leaderboard.length < MAX_LB) return true;
-    return sc > leaderboard[leaderboard.length-1].score;
-  }
-  function addScore(name, sc){
-    leaderboard.push({ name:(name||"Anonymous").slice(0,14), score:sc });
-    leaderboard.sort((a,b)=> b.score - a.score);
-    leaderboard = leaderboard.slice(0, MAX_LB);
+  function qualifies(entry){ if(entry.score <= 0) return false; if(leaderboard.length < MAX_LB) return true; return cmp(entry, leaderboard[leaderboard.length-1]) < 0; }
+  function addScore(name, sc, time){
+    leaderboard.push({ name:(name||"Anonymous").slice(0,14), score:sc, time });
+    leaderboard.sort(cmp); leaderboard = leaderboard.slice(0, MAX_LB);
     saveLeaderboard(); renderLeaderboard();
   }
   function renderLeaderboard(){
     const list = document.getElementById("lb-list");
     if(!leaderboard.length){ list.innerHTML = '<li class="lb-empty">No scores yet — be the first.</li>'; return; }
     list.innerHTML = leaderboard.map((e,i)=>
-      `<li class="lb-item"><span class="lb-rank">${i+1}</span><span class="lb-name"></span><span class="lb-score">${e.score}</span></li>`
+      `<li class="lb-item"><span class="lb-rank">${i+1}</span><span class="lb-name"></span><span class="lb-score">${e.score}</span><span class="lb-time">${e.time==null?"—":fmtTime(e.time)}</span></li>`
     ).join("");
-    const names = list.querySelectorAll(".lb-name");           // set via textContent (no HTML injection)
+    const names = list.querySelectorAll(".lb-name");
     leaderboard.forEach((e,i)=>{ if(names[i]) names[i].textContent = e.name; });
   }
 
@@ -450,21 +541,20 @@
   const nameModal = document.getElementById("name-modal");
   const nameInput = document.getElementById("name-input");
   const nameScore = document.getElementById("name-score");
-  let pendingScore = 0, pendingOverlay = null;
+  const nameTimeEl = document.getElementById("name-time");
+  let pendingScore = 0, pendingTime = 0, pendingOverlay = null;
 
-  function promptName(sc, overlayArgs){
-    pendingScore = sc; pendingOverlay = overlayArgs;
-    nameScore.textContent = sc;
+  function promptName(sc, time, overlayArgs){
+    pendingScore = sc; pendingTime = time; pendingOverlay = overlayArgs;
+    nameScore.textContent = sc; nameTimeEl.textContent = fmtTime(time);
     nameInput.value = store.get("snake64.lastname", "") || "";
     nameModal.classList.add("open");
     setTimeout(()=> nameInput.focus(), 60);
   }
   function closeNameModal(save){
-    if(save){
-      const nm = (nameInput.value || "").trim() || "Anonymous";
-      store.set("snake64.lastname", nm);
-      addScore(nm, pendingScore);
-    }
+    const nm = save ? ((nameInput.value || "").trim() || "Anonymous") : "Anonymous";
+    if(save) store.set("snake64.lastname", nm);
+    addScore(nm, pendingScore, pendingTime);
     nameModal.classList.remove("open");
     if(pendingOverlay){ showOverlay.apply(null, pendingOverlay); pendingOverlay = null; }
   }
@@ -475,47 +565,15 @@
     else if(e.key === "Escape"){ e.preventDefault(); closeNameModal(false); }
   });
 
-  /* ---------- auto agent (placeholder) ---------- */
-  // Implement your "fill the 64x64 board fastest" policy in nextMove() and flip the
-  // "Watch the AI play" checkbox (or set AutoAgent.enabled = true). It is wired and ready.
-  const AutoAgent = {
-    enabled: false,
-    /**
-     * Return "up" | "down" | "left" | "right", or null to take no action this tick.
-     * @param {{grid:number, snake:{x:number,y:number}[], food:{x:number,y:number}|null,
-     *          dir:{x:number,y:number}, cells:Uint8Array}} view
-     *   view.cells[y*grid + x] === 1 means occupied by the snake, 0 means free.
-     */
-    nextMove(view){
-      // TODO: your algorithm goes here. Currently empty (manual play).
-      return null;
-    }
-  };
-  function buildAgentView(){
-    const cells = new Uint8Array(GRID*GRID);
-    for(const s of snake) cells[s.y*GRID + s.x] = 1;
-    return {
-      grid: GRID,
-      snake: snake.map(s => ({x:s.x, y:s.y})),
-      food: food ? {x:food.x, y:food.y} : null,
-      dir: {x:dir.x, y:dir.y},
-      cells
-    };
-  }
-  document.getElementById("ai-checkbox").addEventListener("change", (e)=>{ AutoAgent.enabled = e.target.checked; });
-
   /* ---------- input ---------- */
   const DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
   function setDir(d){ if(d.x === -dir.x && d.y === -dir.y) return; nextDir = d; }
-  const KEYMAP = {
-    "arrowup":"up","w":"up","arrowdown":"down","s":"down",
-    "arrowleft":"left","a":"left","arrowright":"right","d":"right"
-  };
+  const KEYMAP = { "arrowup":"up","w":"up","arrowdown":"down","s":"down","arrowleft":"left","a":"left","arrowright":"right","d":"right" };
   const isEnded = () => state === STATE.OVER;
   function resume(){ state = STATE.PLAYING; overlay.classList.add("hidden"); }
 
   window.addEventListener("keydown", (e) => {
-    if(nameModal.classList.contains("open")) return;   // don't act behind the modal
+    if(nameModal.classList.contains("open")) return;
     const k = e.key.toLowerCase();
     if(["arrowup","arrowdown","arrowleft","arrowright"," ","spacebar"].includes(k)) e.preventDefault();
     if(k === " " || k === "spacebar"){ togglePause(); return; }
@@ -523,6 +581,7 @@
     if(k === "enter"){ if(state === STATE.PAUSED) resume(); else if(state !== STATE.PLAYING) start(); return; }
     const name = KEYMAP[k];
     if(name){
+      if(AutoAgent.enabled){ aiCheckbox.checked = false; AutoAgent.enabled = false; }
       if(state === STATE.READY || isEnded()){ start(); setDir(DIRS[name]); }
       else if(state === STATE.PAUSED){ resume(); setDir(DIRS[name]); }
       else if(state === STATE.PLAYING){ setDir(DIRS[name]); }
@@ -538,10 +597,8 @@
     const t = e.changedTouches[0];
     const dx = t.clientX - tStart.clientX, dy = t.clientY - tStart.clientY;
     tStart = null;
-    if(Math.abs(dx) < 18 && Math.abs(dy) < 18){
-      if(state === STATE.PAUSED) resume(); else if(state !== STATE.PLAYING) start();
-      return;
-    }
+    if(Math.abs(dx) < 18 && Math.abs(dy) < 18){ if(state === STATE.PAUSED) resume(); else if(state !== STATE.PLAYING) start(); return; }
+    if(AutoAgent.enabled){ aiCheckbox.checked = false; AutoAgent.enabled = false; }
     if(state === STATE.READY || isEnded()) start();
     else if(state === STATE.PAUSED) resume();
     if(state === STATE.PLAYING){
@@ -554,10 +611,7 @@
     if(state === STATE.PLAYING){ state = STATE.PAUSED; showOverlay("Paused","Press Space or any direction to resume.","Resume","paused"); }
     else if(state === STATE.PAUSED){ resume(); }
   }
-  function start(){
-    nameModal.classList.remove("open");
-    reset(); state = STATE.PLAYING; overlay.classList.add("hidden");
-  }
+  function start(){ nameModal.classList.remove("open"); reset(); state = STATE.PLAYING; overlay.classList.add("hidden"); }
   document.addEventListener("visibilitychange", () => { if(document.hidden && state === STATE.PLAYING) togglePause(); });
 
   function showOverlay(title, text, btn, variant, record){
@@ -587,23 +641,31 @@
       if(score > best){ best = score; store.set("snake64.best", best); }
       burst(nx, ny);
       rings.push({ x:(nx+0.5)*cell, y:(ny+0.5)*cell, life:1 });
-      eatFlash = 1;
-      tickMs = Math.max(minTick, tickMs - 3.2);
+      eatFlash = 1; tickMs = Math.max(minTick, tickMs - 3.2);
       spawnFood(); grew = true; updateHud();
     } else { snake.pop(); grew = false; }
   }
 
   function die(){
     state = STATE.OVER; shake = 1; deathBurst();
+    const runTime = elapsed/1000;
     const isRecord = score > 0 && score >= best;
-    const args = ["Game Over", isRecord ? `New best — ${score} orbs devoured!` : `You scored ${score}. Best is ${best}.`, "Play again", "over", isRecord];
-    if(qualifies(score)) promptName(score, args); else showOverlay.apply(null, args);
+    const args = ["Game Over", isRecord ? `New best — ${score} orbs in ${fmtTime(runTime)}!` : `Scored ${score} in ${fmtTime(runTime)}. Best is ${best}.`, "Play again", "over", isRecord];
+    if(AutoAgent.enabled){
+      showOverlay("Autopilot stopped", `Boxed in at ${score}. Restarting…`, "Restart", "over", false);
+      setTimeout(()=>{ if(AutoAgent.enabled) start(); }, 1200);
+      return;
+    }
+    if(qualifies({score, time:runTime})) promptName(score, runTime, args);
+    else showOverlay.apply(null, args);
   }
   function winGame(){
     won = true; state = STATE.OVER;
     if(score > best){ best = score; store.set("snake64.best", best); updateHud(); }
-    const args = ["You filled the board!", `Flawless — ${score} orbs. There was nowhere left to grow.`, "Play again", "win", true];
-    if(qualifies(score)) promptName(score, args); else showOverlay.apply(null, args);
+    const runTime = elapsed/1000;
+    const args = ["You filled the board!", `Flawless — ${score} orbs in ${fmtTime(runTime)}.`, "Play again", "win", true];
+    if(!AutoAgent.enabled && qualifies({score, time:runTime})) promptName(score, runTime, args);
+    else showOverlay.apply(null, args);
   }
 
   /* ---------- particles & rings ---------- */
@@ -612,8 +674,7 @@
     for(let i=0;i<n;i++){
       const a = (i/n)*Math.PI*2 + Math.random()*0.4, sp = 1.5 + Math.random()*2.6;
       particles.push({ x:(gx+0.5)*cell, y:(gy+0.5)*cell, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
-        life:1, decay:0.018+Math.random()*0.02, r:cell*0.28*(0.6+Math.random()*0.7),
-        hue: Math.random()<0.5 ? TH.particleA : TH.particleB });
+        life:1, decay:0.018+Math.random()*0.02, r:cell*0.28*(0.6+Math.random()*0.7), hue: Math.random()<0.5 ? TH.particleA : TH.particleB });
     }
   }
   function deathBurst(){
@@ -627,11 +688,41 @@
   function updateParticles(dt){
     const f = dt/16.67;
     for(let i=particles.length-1;i>=0;i--){
-      const p = particles[i];
-      p.x += p.vx*f; p.y += p.vy*f; p.vx *= 0.94; p.vy *= 0.94; p.life -= p.decay*f;
+      const p = particles[i]; p.x += p.vx*f; p.y += p.vy*f; p.vx *= 0.94; p.vy *= 0.94; p.life -= p.decay*f;
       if(p.life <= 0) particles.splice(i,1);
     }
     for(let i=rings.length-1;i>=0;i--){ rings[i].life -= 0.05*f; if(rings[i].life <= 0) rings.splice(i,1); }
+  }
+
+  /* ---------- sizing & background ---------- */
+  let cell = 10, cssSize = 540, dpr = 1;
+  const bgCanvas = document.createElement("canvas");
+  const bgCtx = bgCanvas.getContext("2d");
+
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    cssSize = Math.max(1, Math.min(rect.width, rect.height));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = Math.round(cssSize * dpr);
+    canvas.height = Math.round(cssSize * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cell = cssSize / GRID;
+    buildBackground();
+  }
+  window.addEventListener("resize", resize);
+
+  function buildBackground(){
+    bgCanvas.width = canvas.width; bgCanvas.height = canvas.height;
+    bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = bgCtx.createLinearGradient(0,0,cssSize,cssSize);
+    g.addColorStop(0, TH.boardA); g.addColorStop(1, TH.boardB);
+    bgCtx.fillStyle = g; bgCtx.fillRect(0,0,cssSize,cssSize);
+    bgCtx.lineWidth = 1; bgCtx.strokeStyle = TH.grid; bgCtx.beginPath();
+    for(let i=1;i<GRID;i++){ const p = Math.round(i*cell)+0.5; bgCtx.moveTo(p,0); bgCtx.lineTo(p,cssSize); bgCtx.moveTo(0,p); bgCtx.lineTo(cssSize,p); }
+    bgCtx.stroke();
+    const v = bgCtx.createRadialGradient(cssSize/2,cssSize/2,cssSize*0.2, cssSize/2,cssSize/2,cssSize*0.72);
+    v.addColorStop(0,"rgba(0,0,0,0)"); v.addColorStop(1, TH.vignette);
+    bgCtx.fillStyle = v; bgCtx.fillRect(0,0,cssSize,cssSize);
   }
 
   /* ---------- rendering ---------- */
@@ -645,7 +736,6 @@
     const pulse=0.5+0.5*Math.sin(time*0.006);
     const grow=foodPop>0?Math.max(0,easeOutBack(1-foodPop)):1;
     const r=cell*0.36*grow;
-
     ctx.save();
     if(TH.glow){
       ctx.globalCompositeOperation="lighter";
@@ -661,7 +751,6 @@
     }
     ctx.restore();
     if(r<=0.2) return;
-
     const body=ctx.createRadialGradient(cx-r*0.3,cy-r*0.3,r*0.1,cx,cy,r);
     body.addColorStop(0,TH.food[0]); body.addColorStop(0.35,TH.food[1]); body.addColorStop(1,TH.food[2]);
     ctx.fillStyle=body; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
@@ -670,8 +759,7 @@
 
   function drawRings(){
     if(!rings.length) return;
-    ctx.save();
-    ctx.globalCompositeOperation = TH.glow ? "lighter" : "source-over";
+    ctx.save(); ctx.globalCompositeOperation = TH.glow ? "lighter" : "source-over";
     for(const ring of rings){
       const rr = lerp(cell*0.3, cell*2.4, 1 - ring.life);
       ctx.strokeStyle = `rgba(${TH.ring},${ring.life*(TH.glow?0.6:0.4)})`;
@@ -683,10 +771,7 @@
 
   function snakePoints(t){
     const pts = [];
-    for(let i=0;i<snake.length;i++){
-      const cur = snake[i], pv = prevSnake[i] || cur;
-      pts.push({ x:(lerp(pv.x, cur.x, t)+0.5)*cell, y:(lerp(pv.y, cur.y, t)+0.5)*cell });
-    }
+    for(let i=0;i<snake.length;i++){ const cur = snake[i], pv = prevSnake[i] || cur; pts.push({ x:(lerp(pv.x, cur.x, t)+0.5)*cell, y:(lerp(pv.y, cur.y, t)+0.5)*cell }); }
     return pts;
   }
   function tracePath(pts){
@@ -701,17 +786,12 @@
     const a = pts[0], b = pts[pts.length-1];
     const grad = ctx.createLinearGradient(a.x,a.y,b.x,b.y);
     grad.addColorStop(0,TH.snakeA); grad.addColorStop(0.45,TH.snakeB); grad.addColorStop(1,TH.snakeC);
-
     ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
-
     if(TH.glow){
-      ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = 0.16 + eatFlash*0.22; ctx.strokeStyle = grad;
-      ctx.lineWidth = cell*(1.5 + eatFlash*0.5);
-      tracePath(pts); ctx.stroke();
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.16 + eatFlash*0.22; ctx.strokeStyle = grad;
+      ctx.lineWidth = cell*(1.5 + eatFlash*0.5); tracePath(pts); ctx.stroke();
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
     }
-
     const L = pts.length, K = Math.min(7, L-1), bodyEnd = L - K;
     ctx.strokeStyle = grad; ctx.lineWidth = cell*0.82*(1 + eatFlash*0.10);
     ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
@@ -719,16 +799,13 @@
     else for(let i=1;i<bodyEnd;i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.stroke();
     for(let i=Math.max(0,bodyEnd-1); i<L-1; i++){
-      const f = (i-(bodyEnd-1))/K;
-      ctx.lineWidth = cell*0.82*(1 - 0.6*f);
+      const f = (i-(bodyEnd-1))/K; ctx.lineWidth = cell*0.82*(1 - 0.6*f);
       ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[i+1].x, pts[i+1].y); ctx.stroke();
     }
-
     ctx.strokeStyle = "rgba(2,18,26,0.20)"; ctx.lineWidth = cell*0.20;
     ctx.save(); ctx.translate(cell*0.12, cell*0.14); tracePath(pts); ctx.stroke(); ctx.restore();
     ctx.strokeStyle = "rgba(255,255,255,0.34)"; ctx.lineWidth = cell*0.15;
     ctx.save(); ctx.translate(-cell*0.12, -cell*0.15); tracePath(pts); ctx.stroke(); ctx.restore();
-
     ctx.restore();
     drawHead(pts[0]);
   }
@@ -738,7 +815,6 @@
     const g = ctx.createRadialGradient(h.x-r*0.3,h.y-r*0.3,r*0.1, h.x,h.y,r);
     g.addColorStop(0,TH.headA); g.addColorStop(0.5,TH.headB); g.addColorStop(1,TH.headC);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(h.x,h.y,r,0,Math.PI*2); ctx.fill();
-
     const dx = dir.x, dy = dir.y, ox = -dy, oy = dx;
     const eDist = r*0.42, eFwd = r*0.30, eR = r*0.22;
     const e1x = h.x + dx*eFwd + ox*eDist, e1y = h.y + dy*eFwd + oy*eDist;
@@ -753,13 +829,8 @@
 
   function drawParticles(){
     if(!particles.length) return;
-    ctx.save();
-    ctx.globalCompositeOperation = TH.glow ? "lighter" : "source-over";
-    for(const p of particles){
-      const al = Math.max(0,p.life);
-      ctx.fillStyle = `rgba(${p.hue},${al*(TH.glow?1:0.85)})`;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*al,0,Math.PI*2); ctx.fill();
-    }
+    ctx.save(); ctx.globalCompositeOperation = TH.glow ? "lighter" : "source-over";
+    for(const p of particles){ const al = Math.max(0,p.life); ctx.fillStyle = `rgba(${p.hue},${al*(TH.glow?1:0.85)})`; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*al,0,Math.PI*2); ctx.fill(); }
     ctx.restore();
   }
 
@@ -768,7 +839,6 @@
     ctx.save();
     if(shake > 0){ const s = shake*shake*8; ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s); }
     ctx.drawImage(bgCanvas, 0, 0, cssSize, cssSize);
-
     if(TH.glow){
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       const bx = cssSize*(0.5 + 0.18*Math.sin(time*0.0005)), by = cssSize*(0.42 + 0.16*Math.cos(time*0.0004));
@@ -776,7 +846,6 @@
       breathe.addColorStop(0,"rgba(34,211,238,0.05)"); breathe.addColorStop(1,"rgba(34,211,238,0)");
       ctx.fillStyle = breathe; ctx.fillRect(0,0,cssSize,cssSize); ctx.restore();
     }
-
     drawFood(time); drawRings();
     if(snake) drawSnake(isEnded() ? 1 : t);
     drawParticles();
@@ -788,16 +857,14 @@
     if(!last) last = ts;
     const dt = Math.min(ts - last, 50); last = ts;
     if(Math.min(window.devicePixelRatio || 1, 2) !== dpr) resize();
-
     if(state === STATE.PLAYING){
-      acc += dt;
+      acc += dt; elapsed += dt; timeEl.textContent = fmtTime(elapsed/1000);
       while(acc >= tickMs){ acc -= tickMs; step(); if(state !== STATE.PLAYING) break; }
     }
     updateParticles(dt);
     if(foodPop  > 0) foodPop  = Math.max(0, foodPop  - dt/180);
     if(shake    > 0) shake    = Math.max(0, shake    - dt/420);
     if(eatFlash > 0) eatFlash = Math.max(0, eatFlash - dt/220);
-
     const t = state === STATE.PLAYING ? Math.min(acc/tickMs, 1) : (isEnded() ? 1 : 0);
     render(t, ts);
     requestAnimationFrame(frame);
@@ -820,12 +887,11 @@
 
   /* ---------- boot ---------- */
   function boot(){
+    buildCycle();
     TH = THEMES[currentTheme()];
     tbtn.setAttribute("aria-label", currentTheme() === "dark" ? "Switch to light mode" : "Switch to dark mode");
     renderLeaderboard();
-    resize();
-    reset();
-    state = STATE.READY;
+    resize(); reset(); state = STATE.READY;
     showOverlay("Ready?", "Guide the snake, eat the orbs, and don't hit the walls or yourself.", "Play", "ready");
     requestAnimationFrame(frame);
   }
