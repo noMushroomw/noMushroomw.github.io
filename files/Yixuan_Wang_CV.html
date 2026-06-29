@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+  <!--
+  Yixuan Wang — Curriculum Vitae
+  Buttons (top-right):
+    Download PDF  — generates and downloads a PDF directly (no print dialog needed).
+    Download HTML — saves a clean standalone .html copy of this CV.
+    Print         — fallback: opens the browser print dialog (choose "Save as PDF").
+  Page size is US Letter (change `size: Letter;` to `size: A4;` in @page to switch).
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yixuan Wang — CV</title>
+
+<style>
+  :root {
+    --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --text: #1b1b1d;
+    --muted: #5f6672;
+    --faint: #9aa0a9;
+    --border: #e4e5ea;
+    --accent: #2b5fd9;
+    --chip-bg: #eef2fb;
+    --page: #f4f5f7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    font-family: var(--font-sans);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 816px;
+    margin: 28px auto;
+    background: #fff;
+    padding: 58px 66px 64px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 28px rgba(0,0,0,.06);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  /* Header */
+  .cv-head { margin-bottom: 26px; }
+  .cv-head h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 2.15rem;
+    letter-spacing: .2px;
+    margin: 0 0 4px;
+  }
+  .subtitle { color: var(--muted); font-size: .98rem; margin-bottom: 10px; }
+  .contact { font-size: .86rem; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+  .contact a { color: var(--accent); text-decoration: none; }
+  .contact a:hover { text-decoration: underline; }
+  .contact .sep { margin: 0 9px; color: var(--faint); }
+
+  /* Sections */
+  section { margin-top: 24px; }
+  h2 {
+    font-family: var(--font-sans);
+    font-size: .76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--accent);
+    margin: 0 0 14px;
+    padding-bottom: 7px;
+    border-bottom: 1.5px solid var(--border);
+  }
+
+  /* Education entries */
+  .entry { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 15px; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry-title { font-size: .98rem; }
+  .entry-title b { font-weight: 700; }
+  .entry-deg { color: var(--text); }
+  .entry-sub { color: var(--text); font-size: .9rem; margin-top: 2px; }
+  .entry-note { color: var(--muted); font-size: .88rem; margin-top: 2px; }
+  .entry-date { flex-shrink: 0; color: var(--faint); font-size: .86rem; white-space: nowrap; font-variant-numeric: tabular-nums; padding-top: 1px; }
+
+  /* Publications */
+  ol.pubs { margin: 0; padding-left: 1.5em; }
+  ol.pubs li { margin-bottom: 12px; padding-left: 4px; }
+  ol.pubs li:last-child { margin-bottom: 0; }
+  ol.pubs li::marker { color: var(--faint); font-size: .85em; }
+  .pub-t { display: block; font-weight: 600; font-size: .95rem; line-height: 1.4; }
+  .pub-a { display: block; color: var(--text); font-size: .9rem; }
+  .pub-a strong { font-weight: 700; }
+  .pub-v { display: block; color: var(--muted); font-size: .88rem; }
+  .pub-v em { font-style: italic; color: var(--text); }
+  .pub-v a { color: var(--accent); text-decoration: none; }
+  .pub-v a:hover { text-decoration: underline; }
+  .badge {
+    display: inline-block; font-size: .72rem; font-weight: 600;
+    color: var(--accent); background: var(--chip-bg);
+    padding: 1px 7px; border-radius: 4px; margin-left: 3px; vertical-align: 1px;
+  }
+
+  /* Skills */
+  .skill-row { display: flex; gap: 16px; margin-bottom: 8px; font-size: .92rem; }
+  .skill-row:last-child { margin-bottom: 0; }
+  .skill-label { flex-shrink: 0; width: 110px; font-weight: 700; }
+  .skill-val { color: var(--text); }
+
+  /* Toolbar (screen only) */
+  .toolbar { position: fixed; top: 18px; right: 18px; z-index: 50; display: flex; flex-direction: column; gap: 8px; }
+  .tb-btn {
+    font-family: var(--font-sans); font-size: .85rem; font-weight: 600;
+    padding: 9px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; text-align: center;
+  }
+  .tb-btn:hover { filter: brightness(1.06); }
+  .tb-ghost { background: #fff; color: var(--accent); }
+  .tb-ghost:hover { background: var(--chip-bg); filter: none; }
+
+  /* While generating the PDF, present a clean letter-width sheet */
+  body.capturing { background: #fff; }
+  body.capturing .sheet { width: 816px; max-width: 816px; margin: 0; box-shadow: none; }
+  body.capturing .toolbar { display: none; }
+
+  /* Print / PDF */
+  @page { size: Letter; margin: 0.7in; }
+  @media print {
+    body { background: #fff; }
+    .sheet {
+      max-width: none; width: auto; margin: 0; padding: 0;
+      box-shadow: none; font-size: 10.5pt; line-height: 1.42;
+    }
+    .toolbar, .no-print { display: none !important; }
+    .contact a, .pub-v a { color: #000; }
+    h2 { color: #1b1b1d; }
+    .badge { color: #1b1b1d; background: #eee; }
+    .entry, ol.pubs li { break-inside: avoid; }
+    h2 { break-after: avoid; }
+    section { break-inside: avoid-page; }
+  }
+</style>
+
+</head><body id="artifacts-component-root-html">
+  
+
+  <div class="sheet">
+
+    <header class="cv-head">
+      <h1>Yixuan Wang</h1>
+      <div class="subtitle">Ph.D. Student · Nonlinear Controls &amp; Robotics · University of Florida</div>
+      <div class="contact">
+        <span>Gainesville, FL</span><span class="sep">·</span>
+        <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a><span class="sep">·</span>
+        <a href="tel:+13528889238">(352)&nbsp;888-9238</a><span class="sep">·</span>
+        <a href="https://nomushroomw.github.io" target="_blank" rel="noopener">nomushroomw.github.io</a><span class="sep">·</span>
+        <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a>
+      </div>
+    </header>
+
+    <section>
+      <h2>Education</h2>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — Ph.D., Mechanical &amp; Aerospace Engineering</span></div>
+          <div class="entry-sub">Nonlinear Controls and Robotics (NCR) Lab · Advisor: Prof. Warren E. Dixon</div>
+          <div class="entry-note">Research focus: nonlinear control, Lyapunov stability, generative modeling, reinforcement learning</div>
+        </div>
+        <div class="entry-date">05/2024 – Present</div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>Johns Hopkins University</b><span class="entry-deg"> — M.S., Computer Science</span></div>
+          <div class="entry-sub">Concentration: Machine Learning &amp; Natural Language Processing</div>
+        </div>
+        <div class="entry-date">01/2023 – 05/2024</div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — M.S., Mechanical Engineering</span></div>
+          <div class="entry-sub">Major: Dynamics &amp; System Control · Minor: ECE · GPA 3.75/4.0</div>
+          <div class="entry-note">Herbert Wertheim College of Engineering Achievement Award Scholarship</div>
+        </div>
+        <div class="entry-date">08/2020 – 06/2022</div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>Tongji University</b><span class="entry-deg"> — B.S., Mechanical Design, Manufacture and Automation</span></div>
+        </div>
+        <div class="entry-date">09/2015 – 06/2020</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Publications</h2>
+      <ol class="pubs">
+        <li>
+          <span class="pub-t">Effective Model Pruning: Measuring the Redundancy of Model Components</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren E. Dixon</span>
+          <span class="pub-v"><em>ICML 2026</em> <span class="badge">Spotlight</span> · <a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">arXiv:2509.25606</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Goal Inference with Rao-Blackwellized Particle Filters</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</span>
+          <span class="pub-v"><em>IFAC World Congress 2026</em> · <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">arXiv:2512.09269</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">arXiv:2605.06630</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">arXiv:2605.05530</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">arXiv:2601.22284</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</span>
+          <span class="pub-a">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2025 · <a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">arXiv:2512.21437</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</span>
+          <span class="pub-a">Yihong Guo, <strong>Yixuan Wang</strong>, Yuanyuan Shi, Pan Xu, Anqi Liu</span>
+          <span class="pub-v"><em>NeurIPS 2024</em> · <a href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">arXiv:2411.09891</a></span>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Skills</h2>
+      <div class="skill-row"><span class="skill-label">Programming</span><span class="skill-val">Python, MATLAB / Simulink, C/C++</span></div>
+      <div class="skill-row"><span class="skill-label">Research</span><span class="skill-val">Nonlinear control &amp; Lyapunov analysis, generative modeling, reinforcement learning, Bayesian estimation, model compression, robotics</span></div>
+      <div class="skill-row"><span class="skill-label">Languages</span><span class="skill-val">English (proficient), Mandarin (native), German (B2)</span></div>
+    </section>
+
+  </div>
+
+  
+  
+</body>
+</html>

@@ -1,376 +1,436 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yixuan Wang — Researcher</title>
-    <meta name="description" content="Yixuan Wang — PhD student at the University of Florida researching nonlinear control theory, machine learning, and robotics.">
-    <meta name="theme-color" content="#050507">
+<!--
+  Yixuan Wang — academic homepage
+  Single self-contained file. Deploy: save as index.html in your repo root.
+  To add your photo: drop images/profile.jpg (square works best).
+  To add your CV:    drop files/CV.pdf
+  To add a news item or publication: copy one <li> block and edit it.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yixuan Wang</title>
+<meta name="description" content="Yixuan Wang — PhD student at the University of Florida researching nonlinear control theory, machine learning, and robotics.">
+<meta name="theme-color" content="#ffffff">
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="Yixuan Wang — Researcher">
-    <meta property="og:description" content="PhD student at the University of Florida researching nonlinear control theory, machine learning, and robotics.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://noMushroomw.github.io">
+<!-- Set theme before paint to avoid a flash.
+     A saved choice wins; otherwise follow the visitor's OS preference. -->
+<script>
+(function () {
+  function osPrefersDark() {
+    try { return window.matchMedia('(prefers-color-scheme: dark)').matches; }
+    catch (e) { return false; }
+  }
+  var theme;
+  try {
+    var t = localStorage.getItem('theme');
+    theme = (t === 'dark' || t === 'light') ? t : (osPrefersDark() ? 'dark' : 'light');
+  } catch (e) {
+    theme = osPrefersDark() ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css">
+    --bg: #ffffff;
+    --bg-elevated: rgba(255,255,255,0.82);
+    --text: #1c1c1e;
+    --text-muted: #5f6672;
+    --text-faint: #9aa0a9;
+    --border: #e9e9ee;
+    --accent: #2b5fd9;
+    --accent-hover: #1e49bf;
+    --chip-bg: #f3f5f9;
+    --chip-text: #475067;
+    --avatar-from: #eef1f6;
+    --avatar-to: #dde3ee;
+    --avatar-text: #9aa3b5;
+  }
+  [data-theme="dark"] {
+    --bg: #060608;
+    --bg-elevated: rgba(10,10,13,0.82);
+    --text: #e7e7ea;
+    --text-muted: #9a9aa3;
+    --text-faint: #6a6a73;
+    --border: #1d1d23;
+    --accent: #74a2ff;
+    --accent-hover: #97baff;
+    --chip-bg: #14141a;
+    --chip-text: #b7bcc8;
+    --avatar-from: #15151b;
+    --avatar-to: #1d1d26;
+    --avatar-text: #585e6d;
+  }
 
-    <!-- Theme: set before paint to avoid flash of wrong theme -->
-    <script>
-        (function () {
-            try {
-                var stored = localStorage.getItem('theme');
-                var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-                var theme = stored || (prefersLight ? 'light' : 'dark');
-                document.documentElement.setAttribute('data-theme', theme);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-</head>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  .site-header {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .brand { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; color: var(--text); letter-spacing: .5px; }
+  .brand:hover { text-decoration: none; color: var(--text); }
+  .nav { display: flex; align-items: center; gap: 22px; }
+  .nav a { color: var(--text-muted); font-size: .92rem; }
+  .nav a:hover { color: var(--accent); text-decoration: none; }
+
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; padding: 0;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    transition: color .2s ease, border-color .2s ease, background-color .2s ease;
+  }
+  .toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .toggle svg { width: 17px; height: 17px; }
+  .icon-sun { display: none; }
+  [data-theme="dark"] .icon-sun { display: block; }
+  [data-theme="dark"] .icon-moon { display: none; }
+
+  /* Intro */
+  .intro { display: flex; gap: 32px; align-items: center; padding: 52px 0 8px; }
+  .avatar {
+    position: relative; flex-shrink: 0;
+    width: 168px; height: 168px; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--avatar-from), var(--avatar-to));
+  }
+  .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+  .avatar .avatar-dark { display: none; }
+  [data-theme="dark"] .avatar .avatar-light { display: none; }
+  [data-theme="dark"] .avatar .avatar-dark { display: block; }
+  .avatar img.img-failed { display: none !important; }
+
+  .intro-text h1 { font-family: var(--font-serif); font-weight: 600; font-size: 2.1rem; line-height: 1.15; margin: 0 0 8px; }
+  .role { color: var(--text); font-size: 1.02rem; margin: 0 0 4px; }
+  .role .muted { color: var(--text-muted); }
+  .tagline { color: var(--text-muted); font-size: .95rem; margin: 0 0 16px; }
+
+  .links { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .links a { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--accent); }
+  .links a svg { width: 15px; height: 15px; }
+
+  /* Sections */
+  section { padding: 34px 0; scroll-margin-top: 76px; }
+  section h2 {
+    font-family: var(--font-serif); font-weight: 600; font-size: 1.4rem;
+    margin: 0 0 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  p { margin: 0 0 14px; }
+  .lead { color: var(--text); }
+  .beyond { color: var(--text-muted); font-size: .95rem; margin-top: 18px; }
+  .beyond b { color: var(--text); font-weight: 600; }
+
+  /* Interest chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: .85rem; padding: 5px 12px; border-radius: 999px;
+    background: var(--chip-bg); color: var(--chip-text);
+  }
+
+  /* News */
+  .news-list { list-style: none; margin: 0; padding: 0; }
+  .news-list li { display: flex; gap: 18px; padding: 9px 0; align-items: baseline; }
+  .news-date { flex-shrink: 0; width: 56px; color: var(--text-faint); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .news-body { color: var(--text); }
+  .news-body em { color: var(--text-muted); font-style: italic; }
+  .news-body strong { font-weight: 600; }
+
+  /* Publications */
+  .pub-list { list-style: none; margin: 0; padding: 0; }
+  .pub { padding: 18px 0; border-bottom: 1px solid var(--border); }
+  .pub:last-child { border-bottom: 0; }
+  .pub-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.08rem; line-height: 1.35; margin: 0 0 5px; }
+  .pub-title a { color: var(--text); }
+  .pub-title a:hover { color: var(--accent); }
+  .pub-authors { color: var(--text-muted); font-size: .92rem; margin-bottom: 3px; }
+  .pub-authors strong { color: var(--text); font-weight: 600; }
+  .pub-meta { font-size: .88rem; margin-bottom: 10px; }
+  .pub-venue { color: var(--text); font-weight: 500; font-style: italic; }
+  .pub-venue.preprint { color: var(--text-faint); font-weight: 400; }
+  .pub-award {
+    margin-left: 8px; font-size: .76rem; font-style: normal; letter-spacing: .3px;
+    padding: 2px 8px; border-radius: 999px;
+    color: var(--accent); background: var(--chip-bg);
+  }
+  .pub-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pub-link {
+    font-size: .82rem; padding: 3px 11px; border-radius: 7px;
+    border: 1px solid var(--border); color: var(--accent);
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .pub-link:hover { border-color: var(--accent); color: var(--accent-hover); text-decoration: none; }
+
+  /* Education */
+  .edu-list { list-style: none; margin: 0; padding: 0; }
+  .edu-list li { display: flex; gap: 18px; padding: 12px 0; }
+  .edu-list li + li { border-top: 1px solid var(--border); }
+  .edu-year { flex-shrink: 0; width: 84px; color: var(--text-faint); font-size: .88rem; font-variant-numeric: tabular-nums; }
+  .edu-degree { font-weight: 600; }
+  .edu-place { color: var(--text); }
+  .edu-note { color: var(--text-muted); font-size: .88rem; margin-top: 2px; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 26px 0 44px; color: var(--text-faint); font-size: .85rem; }
+  footer a { color: var(--text-muted); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .nav a { display: none; }
+    .intro { flex-direction: column; text-align: center; gap: 20px; padding-top: 40px; }
+    .links { justify-content: center; }
+    .intro-text h1 { font-size: 1.85rem; }
+    .news-list li { flex-direction: column; gap: 2px; }
+    .news-date { width: auto; }
+  }
+</style>
+
 <body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="#top">Yixuan Wang</a>
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#news">News</a>
+        <a href="#publications">Publications</a>
+        <a href="#education">Education</a>
+        <a href="snake.html">Fun Stuffs</a>
+        <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
 
-    <!-- ===== NAVIGATION ===== -->
-    <header class="nav" id="nav">
-        <div class="nav__container">
-            <a href="#hero" class="nav__logo">YW<span class="nav__logo-dot">.</span></a>
-            <nav class="nav__menu" id="navMenu">
-                <a href="#about" class="nav__link">About</a>
-                <a href="#education" class="nav__link">Education</a>
-                <a href="#publications" class="nav__link">Research</a>
-                <a href="#contact" class="nav__link">Contact</a>
-                <a href="files/CV.pdf" class="nav__cta">Download CV</a>
-            </nav>
-            <div class="nav__right">
-                <button class="nav__theme" id="themeToggle" aria-label="Toggle color theme" title="Toggle light / dark mode">
-                    <svg class="nav__theme-icon nav__theme-icon--sun" width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/>
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                    </svg>
-                    <svg class="nav__theme-icon nav__theme-icon--moon" width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-                <button class="nav__toggle" id="navToggle" aria-label="Toggle navigation">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
-        </div>
-    </header>
+  <div id="top"></div>
 
-    <!-- ===== HERO ===== -->
-    <section class="hero" id="hero">
-        <div class="hero__bg">
-            <div class="hero__orb hero__orb--1"></div>
-            <div class="hero__orb hero__orb--2"></div>
-            <div class="hero__orb hero__orb--3"></div>
-            <div class="hero__grid"></div>
+  <main class="wrap">
+
+    <!-- Intro -->
+    <div class="intro">
+      <div class="avatar">
+        <!-- Add two square photos to your repo:
+             images/profile-light.jpg  (white-shirt shot, shown in light mode)
+             images/profile-dark.jpg   (black-outfit shot, shown in dark mode)
+             Until they exist, only the gradient background shows. -->
+        <img class="avatar-light" src="images/profile-light.jpg" alt="Yixuan Wang" onerror="this.classList.add('img-failed')">
+        <img class="avatar-dark" src="images/profile-dark.jpg" alt="Yixuan Wang" onerror="this.classList.add('img-failed')">
+      </div>
+      <div class="intro-text">
+        <h1>Yixuan Wang</h1>
+        <p class="role">PhD Student, <span class="muted">University of Florida · NCR Lab</span></p>
+        <p class="tagline">Unifying machine learning and nonlinear control theory through Lyapunov stability on invariant manifolds.</p>
+        <div class="links">
+          <a href="mailto:wang.yixuan@ufl.edu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email</a>
+          <a href="https://github.com/noMushroomw" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+          <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&hl=en" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>Google Scholar</a>
+          <a href="https://www.linkedin.com/in/yixuan-wang-b81200293" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>LinkedIn</a>
+          <a href="https://twitter.com/nomushroomw" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>Twitter</a>
+          <a href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>CV</a>
         </div>
-        <div class="hero__content">
-            <p class="hero__greeting fade-up">Hello, I'm</p>
-            <h1 class="hero__name fade-up">Yixuan Wang</h1>
-            <p class="hero__title fade-up">
-                <span class="gradient-text">PhD Student</span> at the University of Florida NCR Lab
-            </p>
-            <p class="hero__subtitle fade-up">
-                Unifying machine learning and nonlinear control theory through Lyapunov stability on invariant manifolds.
-            </p>
-            <div class="hero__actions fade-up">
-                <a href="#publications" class="btn btn--primary">
-                    <span>View My Research</span>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
-                <a href="#contact" class="btn btn--outline">Get in Touch</a>
-            </div>
-        </div>
-        <div class="hero__scroll fade-up">
-            <span>Scroll</span>
-            <div class="hero__scroll-line"></div>
-        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <section id="about">
+      <h2>About</h2>
+      <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a>. My research bridges nonlinear control theory and modern machine learning.</p>
+      <p>I'm broadly interested in understanding learning systems through the lens of dynamical systems and Lyapunov stability. My work applies control-theoretic tools to problems in modern machine learning, aiming for methods that are both principled and practical.</p>
+      <p>Before joining UF for my PhD, I earned an M.S. in Computer Science from Johns Hopkins University and an M.S. in Mechanical Engineering from UF. I received my B.S. from Tongji University in Shanghai.</p>
+      <p class="beyond"><b>Beyond research.</b> When I'm not chasing convergence proofs, you'll likely find me by the water — an avid fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
     </section>
 
-    <!-- ===== ABOUT ===== -->
-    <section class="section" id="about">
-        <div class="container">
-            <div class="section__header fade-up">
-                <span class="section__tag">01</span>
-                <h2 class="section__title">About Me</h2>
-            </div>
-            <div class="about__grid">
-                <div class="about__text fade-up">
-                    <p class="about__lead">
-                        I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. Warren E. Dixon. My research bridges nonlinear control theory and modern machine learning.
-                    </p>
-                    <p>
-                        I'm broadly interested in understanding learning systems through the lens of dynamical systems and Lyapunov stability. My work applies control-theoretic tools to problems in optimization, Bayesian estimation, and model compression, aiming for methods that are both principled and practical.
-                    </p>
-                    <p>
-                        Before joining UF for my PhD, I earned an M.S. in Computer Science from Johns Hopkins University and an M.S. in Mechanical Engineering from UF. I received my B.S. from Tongji University in Shanghai.
-                    </p>
-                    <div class="about__interests">
-                        <h3>Research Interests</h3>
-                        <div class="tag-list">
-                            <span class="tag">Generative Modeling</span>
-                            <span class="tag">JEPA</span>
-                            <span class="tag">Lyapunov Nonlinear Control</span>
-                            <span class="tag">Reinforcement Learning</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="about__aside fade-up">
-                    <div class="about__personal">
-                        <h3>Beyond Research</h3>
-                        <p>When I'm not chasing convergence proofs, you'll likely find me by the water. I'm an avid fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Research Interests -->
+    <section id="interests">
+      <h2>Research Interests</h2>
+      <div class="chips">
+        <span class="chip">Generative Modeling</span>
+        <span class="chip">JEPA</span>
+        <span class="chip">Lyapunov Stability</span>
+        <span class="chip">Nonlinear Control</span>
+        <span class="chip">Reinforcement Learning</span>
+      </div>
     </section>
 
-    <!-- ===== EDUCATION ===== -->
-    <section class="section section--alt" id="education">
-        <div class="container">
-            <div class="section__header fade-up">
-                <span class="section__tag">02</span>
-                <h2 class="section__title">Education</h2>
-            </div>
-            <div class="timeline">
-                <div class="timeline__item fade-up">
-                    <div class="timeline__dot"></div>
-                    <div class="timeline__card">
-                        <span class="timeline__date">Present</span>
-                        <h3 class="timeline__degree">Ph.D. in Mechanical &amp; Aerospace Engineering</h3>
-                        <p class="timeline__school">University of Florida</p>
-                        <p class="timeline__detail">Advisor: Prof. Warren E. Dixon</p>
-                        <p class="timeline__detail">Focus: Nonlinear Control Theory, Machine Learning, Robotics</p>
-                    </div>
-                </div>
-                <div class="timeline__item fade-up">
-                    <div class="timeline__dot"></div>
-                    <div class="timeline__card">
-                        <span class="timeline__date">2024</span>
-                        <h3 class="timeline__degree">M.S. in Computer Science</h3>
-                        <p class="timeline__school">Johns Hopkins University</p>
-                    </div>
-                </div>
-                <div class="timeline__item fade-up">
-                    <div class="timeline__dot"></div>
-                    <div class="timeline__card">
-                        <span class="timeline__date">2022</span>
-                        <h3 class="timeline__degree">M.S. in Mechanical Engineering</h3>
-                        <p class="timeline__school">University of Florida</p>
-                    </div>
-                </div>
-                <div class="timeline__item fade-up">
-                    <div class="timeline__dot"></div>
-                    <div class="timeline__card">
-                        <span class="timeline__date">2020</span>
-                        <h3 class="timeline__degree">B.S. in Mechanical Engineering</h3>
-                        <p class="timeline__school">Tongji University</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- News -->
+    <section id="news">
+      <h2>News</h2>
+      <ul class="news-list">
+        <!-- Newest first. Copy a line to add an entry. -->
+        <li><div class="news-date">2026</div><div class="news-body"><em>“Effective Model Pruning”</em> accepted to <strong>ICML 2026</strong> as a Spotlight.</div></li>
+        <li><div class="news-date">2026</div><div class="news-body"><em>“Goal Inference with Rao-Blackwellized Particle Filters”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
+        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Riemannian Lyapunov Optimizer: A Unified Framework for Optimization.”</em></div></li>
+        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective.”</em></div></li>
+        <li><div class="news-date">2024</div><div class="news-body"><em>“Off-Dynamics Reinforcement Learning”</em> accepted to <strong>NeurIPS 2024</strong>.</div></li>
+      </ul>
     </section>
 
-    <!-- ===== PUBLICATIONS ===== -->
-    <section class="section" id="publications">
-        <div class="container">
-            <div class="section__header fade-up">
-                <span class="section__tag">03</span>
-                <h2 class="section__title">Research &amp; Publications</h2>
-            </div>
-            <div class="publications">
-                <article class="pub fade-up">
-                    <div class="pub__year">2026</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Effective Model Pruning: Measuring the Redundancy of Model Components</h3>
-                        <p class="pub__authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren Dixon</p>
-                        <p class="pub__venue">ICML 2026 (Spotlight)</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2509.25606" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                            <a href="https://github.com/noMushroomw" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Code
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2026</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Goal Inference with Rao-Blackwellized Particle Filters</h3>
-                        <p class="pub__authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</p>
-                        <p class="pub__venue">IFAC World Congress 2026</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2512.09269" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                            <a href="https://github.com/noMushroomw" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Code
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2026</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</h3>
-                        <p class="pub__authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</p>
-                        <p class="pub__venue">arXiv Preprint</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2605.06630" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2026</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</h3>
-                        <p class="pub__authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</p>
-                        <p class="pub__venue">arXiv Preprint</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2605.05530" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2026</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</h3>
-                        <p class="pub__authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</p>
-                        <p class="pub__venue">arXiv Preprint</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2601.22284" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                            <a href="https://github.com/noMushroomw" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Code
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2025</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</h3>
-                        <p class="pub__authors">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</p>
-                        <p class="pub__venue">arXiv Preprint</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2512.21437" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                        </div>
-                    </div>
-                </article>
-                <article class="pub fade-up">
-                    <div class="pub__year">2024</div>
-                    <div class="pub__content">
-                        <h3 class="pub__title">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</h3>
-                        <p class="pub__authors">Yihong Guo, <strong>Yixuan Wang</strong>, Yuanyuan Shi, Pan Xu, Anqi Liu</p>
-                        <p class="pub__venue">NeurIPS 2024</p>
-                        <div class="pub__links">
-                            <a href="https://arxiv.org/abs/2411.09891" class="pub__link">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H6M12 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Paper
-                            </a>
-                        </div>
-                    </div>
-                </article>
-            </div>
-        </div>
+    <!-- Publications -->
+    <section id="publications">
+      <h2>Publications</h2>
+      <ul class="pub-list">
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning: Measuring the Redundancy of Model Components</a></h3>
+          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren Dixon</div>
+          <div class="pub-meta"><span class="pub-venue">ICML 2026</span><span class="pub-award">Spotlight</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Paper</a>
+            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a></h3>
+          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</div>
+          <div class="pub-meta"><span class="pub-venue">IFAC World Congress 2026</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Paper</a>
+            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a></h3>
+          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</div>
+          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Paper</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</a></h3>
+          <div class="pub-authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</div>
+          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</a></h3>
+          <div class="pub-authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</div>
+          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Paper</a>
+            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</a></h3>
+          <div class="pub-authors">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</div>
+          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Paper</a>
+          </div>
+        </li>
+
+        <li class="pub">
+          <h3 class="pub-title"><a href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</a></h3>
+          <div class="pub-authors">Yihong Guo, <strong>Yixuan Wang</strong>, Yuanyuan Shi, Pan Xu, Anqi Liu</div>
+          <div class="pub-meta"><span class="pub-venue">NeurIPS 2024</span></div>
+          <div class="pub-links">
+            <a class="pub-link" href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Paper</a>
+          </div>
+        </li>
+
+      </ul>
     </section>
 
-    <!-- ===== CONTACT ===== -->
-    <section class="section section--alt" id="contact">
-        <div class="container">
-            <div class="section__header fade-up">
-                <span class="section__tag">04</span>
-                <h2 class="section__title">Get in Touch</h2>
-            </div>
-            <div class="contact__grid">
-                <div class="contact__text fade-up">
-                    <p class="contact__lead">
-                        I'm always open to discussing research collaborations, academic opportunities, or interesting problems in nonlinear control theory, machine learning, and robotics.
-                    </p>
-                    <a href="mailto:wang.yixuan@ufl.edu" class="contact__email gradient-text">wang.yixuan@ufl.edu</a>
-                    <div class="contact__socials">
-                        <a href="https://github.com/noMushroomw" class="contact__social" aria-label="GitHub">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                        </a>
-                        <a href="https://www.linkedin.com/in/yixuan-wang-b81200293" class="contact__social" aria-label="LinkedIn">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                        </a>
-                        <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&hl=en" class="contact__social" aria-label="Google Scholar">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 100 14 7 7 0 000-14z"/></svg>
-                        </a>
-                        <a href="https://twitter.com/nomushroomw" class="contact__social" aria-label="Twitter / X">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        </a>
-                    </div>
-                </div>
-                <div class="contact__card fade-up">
-                    <div class="contact__card-inner">
-                        <div class="contact__card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h3>Let's Collaborate</h3>
-                        <p>Whether you're interested in nonlinear control theory, machine learning, or robotics &mdash; I'd love to hear from you.</p>
-                        <a href="mailto:wang.yixuan@ufl.edu" class="btn btn--primary btn--full">
-                            <span>Send an Email</span>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Education -->
+    <section id="education">
+      <h2>Education</h2>
+      <ul class="edu-list">
+        <li>
+          <div class="edu-year">Present</div>
+          <div class="edu-body">
+            <div class="edu-degree">Ph.D. in Mechanical &amp; Aerospace Engineering</div>
+            <div class="edu-place">University of Florida</div>
+            <div class="edu-note">Advisor: Prof. Warren E. Dixon · Nonlinear Control Theory, Machine Learning, Robotics</div>
+          </div>
+        </li>
+        <li>
+          <div class="edu-year">2024</div>
+          <div class="edu-body">
+            <div class="edu-degree">M.S. in Computer Science</div>
+            <div class="edu-place">Johns Hopkins University</div>
+          </div>
+        </li>
+        <li>
+          <div class="edu-year">2022</div>
+          <div class="edu-body">
+            <div class="edu-degree">M.S. in Mechanical Engineering</div>
+            <div class="edu-place">University of Florida</div>
+          </div>
+        </li>
+        <li>
+          <div class="edu-year">2020</div>
+          <div class="edu-body">
+            <div class="edu-degree">B.S. in Mechanical Engineering</div>
+            <div class="edu-place">Tongji University</div>
+          </div>
+        </li>
+      </ul>
     </section>
 
-    <!-- ===== FOOTER ===== -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer__inner">
-                <p class="footer__copy">&copy; 2025 Yixuan Wang. All rights reserved.</p>
-                <nav class="footer__nav">
-                    <a href="#about">About</a>
-                    <a href="#education">Education</a>
-                    <a href="#publications">Research</a>
-                    <a href="#contact">Contact</a>
-                </nav>
-            </div>
-        </div>
-    </footer>
+  </main>
 
-    <script src="js/main.js"></script>
+  <footer>
+    <div class="wrap">
+      © 2026 Yixuan Wang · <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    function syncLabel() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+    syncLabel();
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      syncLabel();
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  })();
+  </script>
 </body>
-</html>
