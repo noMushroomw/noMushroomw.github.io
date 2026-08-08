@@ -807,12 +807,12 @@ function drawStar(ctx, cx, cy, R, color) {
 
 function drawLegend(ctx) {
   const items = [
-    [sim.mode === "nominal" ? PAL.nominal : PAL.obf, sim.mode === "nominal" ? "assumed agent" : "obfuscating agent"],
-    ["#e03131", "observation"],
-    [PAL.accent, "true goal"],
-    [PAL.est, "estimated goal"],
+    { shape: "dot", color: sim.mode === "nominal" ? PAL.nominal : PAL.obf,
+      label: sim.mode === "nominal" ? "assumed agent" : "obfuscating agent" },
   ];
-  if (sim.mode === "obf") items.push([PAL.cheb, "Chebyshev center"]);
+  if (sim.mode === "nominal") items.push({ shape: "dot", color: "#e03131", label: "observation" });
+  items.push({ shape: "star", color: PAL.accent, label: "true goal" });
+  items.push({ shape: "triangle", color: PAL.est, label: "estimated goal" });
   ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
   const boxW = 148, lineH = 19, pad = 9;
   const x0p = stageSize - boxW - 12, y0p = stageSize - (items.length * lineH + pad * 2) - 12;
@@ -821,12 +821,21 @@ function drawLegend(ctx) {
   ctx.beginPath();
   ctx.roundRect(x0p, y0p, boxW, items.length * lineH + pad * 2, 8);
   ctx.fill(); ctx.stroke();
-  items.forEach(([col, label], i) => {
+  items.forEach((it, i) => {
     const yy = y0p + pad + i * lineH + 9;
-    ctx.beginPath(); ctx.fillStyle = col;
-    ctx.arc(x0p + pad + 5, yy, 4.5, 0, 2 * Math.PI); ctx.fill();
+    const cx = x0p + pad + 5;
+    if (it.shape === "star") {
+      drawStar(ctx, cx, yy, 6.5, it.color);
+    } else if (it.shape === "triangle") {
+      ctx.beginPath();
+      ctx.moveTo(cx, yy - 5.5); ctx.lineTo(cx - 5, yy + 3.5); ctx.lineTo(cx + 5, yy + 3.5);
+      ctx.closePath(); ctx.fillStyle = it.color; ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.fillStyle = it.color;
+      ctx.arc(cx, yy, 4.5, 0, 2 * Math.PI); ctx.fill();
+    }
     ctx.fillStyle = PAL.muted;
-    ctx.fillText(label, x0p + pad + 16, yy + 4);
+    ctx.fillText(it.label, x0p + pad + 16, yy + 4);
   });
 }
 
