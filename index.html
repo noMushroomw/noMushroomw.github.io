@@ -163,15 +163,25 @@
   .news-body strong { font-weight: 600; }
 
   /* Publications */
-  .pub-list { list-style: none; margin: 0; padding: 0; }
-  .pub { padding: 18px 0; border-bottom: 1px solid var(--border); }
+  .pub-list { list-style: none; margin: 0 0 8px; padding: 0; }
+  .pub-cat { font-family: var(--font-serif); font-weight: 600; font-size: 1.14rem; margin: 24px 0 2px; }
+  .pub-cat:first-of-type { margin-top: 0; }
+  .pub { display: flex; gap: 20px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--border); }
   .pub:last-child { border-bottom: 0; }
+  .pub-thumb {
+    flex-shrink: 0; display: block; width: 168px; aspect-ratio: 1 / 1;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: #fff;
+  }
+  .pub-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .pub-body { flex: 1; min-width: 0; }
   .pub-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.08rem; line-height: 1.35; margin: 0 0 5px; }
   .pub-title a { color: var(--text); }
   .pub-title a:hover { color: var(--accent); }
   .pub-authors { color: var(--text-muted); font-size: .92rem; margin-bottom: 3px; }
   .pub-authors strong { color: var(--text); font-weight: 600; }
   .pub-meta { font-size: .88rem; margin-bottom: 10px; }
+  .pub-tldr { color: var(--text-muted); font-size: .89rem; line-height: 1.55; margin: -4px 0 10px; }
   .pub-venue { color: var(--text); font-weight: 500; font-style: italic; }
   .pub-venue.preprint { color: var(--text-faint); font-weight: 400; }
   .pub-award {
@@ -208,6 +218,8 @@
     .intro-text h1 { font-size: 1.85rem; }
     .news-list li { flex-direction: column; gap: 2px; }
     .news-date { width: auto; }
+    .pub { flex-direction: column; gap: 12px; }
+    .pub-thumb { width: 200px; }
   }
 </style>
 
@@ -267,10 +279,10 @@
     <!-- About -->
     <section id="about">
       <h2>About</h2>
-      <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a>. My research bridges nonlinear control theory and modern machine learning.</p>
-      <p>I'm broadly interested in understanding learning systems through the lens of dynamical systems and Lyapunov stability. My work applies control-theoretic tools to problems in modern machine learning, aiming for methods that are both principled and practical.</p>
+      <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a> and coadvised by Dr. <a href="https://scholar.google.com/citations?user=ruBLg7wAAAAJ" target="_blank" rel="noopener">Dan P. Guralnik</a>. My research bridges nonlinear control theory and modern machine learning.</p>
+      <p>I'm broadly interested in understanding machine learning systems through the lens of dynamical systems and Lyapunov stability. My work applies control-theoretic tools to problems in modern machine learning, aiming for methods that are both principled and practical.</p>
       <p>Before joining UF for my PhD, I earned an M.S. in Computer Science from Johns Hopkins University and an M.S. in Mechanical Engineering from UF. I received my B.S. from Tongji University in Shanghai.</p>
-      <p class="beyond"><b>Beyond research.</b> When I'm not chasing convergence proofs, you'll likely find me by the water — an avid fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
+      <p class="beyond"><b>Beyond research.</b> You'll likely find me by the water — a fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
     </section>
 
     <!-- Research Interests -->
@@ -302,75 +314,117 @@
     <!-- Publications -->
     <section id="publications">
       <h2>Publications</h2>
+
+      <h3 class="pub-cat">Machine Learning</h3>
       <ul class="pub-list">
 
         <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning: Measuring the Redundancy of Model Components</a></h3>
-          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren Dixon</div>
-          <div class="pub-meta"><span class="pub-venue">ICML 2026</span><span class="pub-award">Spotlight</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Paper</a>
-            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+          <a class="pub-thumb" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener"><img src="images/pubs/model-pruning.png" alt="3D illustration of the nested B-nu balls and the probability simplex from the Effective Model Pruning paper" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning: Measuring the Redundancy of Model Components</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren Dixon</div>
+            <div class="pub-meta"><span class="pub-venue">ICML 2026</span><span class="pub-award">Spotlight</span></div>
+            <div class="pub-tldr">Given any importance scores over model components, how many can be dropped for free? The effective sample size of the score distribution yields an adaptive sparsity level with a provable bound on the loss change.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw/Effective-model-pruning" target="_blank" rel="noopener">Code</a>
+            </div>
           </div>
         </li>
 
         <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a></h3>
-          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</div>
-          <div class="pub-meta"><span class="pub-venue">IFAC World Congress 2026</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Paper</a>
-            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+          <a class="pub-thumb" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener"><img src="images/pubs/energy-matching.png" alt="Langevin samples converging to the 8-Gaussian target distribution in the energy matching experiments" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">Sampling from an energy-based generative model is a control problem: KL as the Lyapunov function gives Langevin sampling a principled finite-step stopping rule — and opens the door to safety, with barrier functions for constrained generation.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+            </div>
           </div>
         </li>
 
         <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a></h3>
-          <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</div>
-          <div class="pub-meta"><span class="pub-venue">IEEE CDC 2026</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Paper</a>
+          <a class="pub-thumb" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener"><img src="images/pubs/riemannian-lyapunov.png" alt="3D diagram of the NAIM manifold with fast trajectories converging onto it and slow dynamics evolving along it" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">Optimizers turned into dynamical systems: training evolves on a Riemannian manifold under a Lyapunov certificate — recovering classic algorithms, and offering a blueprint and grammar for designing the optimizers of the future.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw/NAIM" target="_blank" rel="noopener">Code</a>
+            </div>
           </div>
         </li>
 
         <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</a></h3>
-          <div class="pub-authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</div>
-          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
-          </div>
-        </li>
-
-        <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</a></h3>
-          <div class="pub-authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</div>
-          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Paper</a>
-            <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
-          </div>
-        </li>
-
-        <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</a></h3>
-          <div class="pub-authors">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</div>
-          <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Paper</a>
-          </div>
-        </li>
-
-        <li class="pub">
-          <h3 class="pub-title"><a href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</a></h3>
-          <div class="pub-authors">Yihong Guo, <strong>Yixuan Wang</strong>, Yuanyuan Shi, Pan Xu, Anqi Liu</div>
-          <div class="pub-meta"><span class="pub-venue">NeurIPS 2024</span></div>
-          <div class="pub-links">
-            <a class="pub-link" href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Paper</a>
+          <a class="pub-thumb" href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener"><img src="images/pubs/off-dynamics-rl.png" alt="Method overview diagram of DARAIL: domain adaptation with reward augmented imitation across source and target domains" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</a></h3>
+            <div class="pub-authors">Yihong Guo, <strong>Yixuan Wang</strong>, Yuanyuan Shi, Pan Xu, Anqi Liu</div>
+            <div class="pub-meta"><span class="pub-venue">NeurIPS 2024</span></div>
+            <div class="pub-tldr">Deploying a source-trained policy under dynamics shift: DARAIL modifies rewards for domain adaptation, then transfers the policy via reward-augmented imitation learning so it reproduces the right trajectories in the target domain — with an error bound and gains on off-dynamics benchmarks.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2411.09891" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+            </div>
           </div>
         </li>
 
       </ul>
+
+      <h3 class="pub-cat">Control</h3>
+      <ul class="pub-list">
+
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener"><img src="images/pubs/rbpf-inference.gif" alt="Animated demo of RBPF intent inference: particle intents converging onto the agent's true goal" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue">IFAC World Congress 2026</span></div>
+            <div class="pub-tldr">An RBPF can infer your agent's goal simply from observing its past trajectory.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw/obfuscation" target="_blank" rel="noopener">Code</a>
+              <a class="pub-link" href="demos/rbpf-obfuscation.html?mode=assumed">Interactive Demo</a>
+            </div>
+          </div>
+        </li>
+
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener"><img src="images/pubs/obfuscation-trajectory.gif" alt="Animated demo comparing an assumed agent's direct trajectory with an obfuscating agent weaving inside the tracking envelope" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</div>
+            <div class="pub-meta"><span class="pub-venue">IEEE CDC 2026</span></div>
+            <div class="pub-tldr">Given an adversary trying to infer your goal, probabilistic control barrier functions (PCBFs) guarantee the information leakage never breaches a pre-defined privacy threshold — while still completing the tracking task.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw/obfuscation" target="_blank" rel="noopener">Code</a>
+              <a class="pub-link" href="demos/rbpf-obfuscation.html?mode=obfuscation">Interactive Demo</a>
+            </div>
+          </div>
+        </li>
+
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener"><img src="images/pubs/kan-adaptive.png" alt="Architecture diagram of a Kolmogorov-Arnold network with learnable activation functions on edges" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</a></h3>
+            <div class="pub-authors">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">The first Lyapunov-based adaptive controller built on Kolmogorov-Arnold networks (KANs): real-time learning with asymptotic tracking guarantees, and — unlike MLP-based designs — interpretability, since the learned dynamics decompose into visualizable univariate functions.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+            </div>
+          </div>
+        </li>
+
+      </ul>
+
     </section>
 
     <!-- Education -->

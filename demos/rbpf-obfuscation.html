@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBPF Goal Inference &amp; Obfuscation — Interactive Demo</title>
+<meta name="description" content="Interactive demo: Rao-Blackwellized particle filter intent inference and safe goal obfuscation.">
+
+<script>
+(function () {
+  function osPrefersDark() {
+    try { return window.matchMedia('(prefers-color-scheme: dark)').matches; }
+    catch (e) { return false; }
+  }
+  var theme;
+  try {
+    var t = localStorage.getItem('theme');
+    theme = (t === 'dark' || t === 'light') ? t : (osPrefersDark() ? 'dark' : 'light');
+  } catch (e) {
+    theme = osPrefersDark() ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<style>
+  :root {
+    --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --bg: #ffffff;
+    --bg-elevated: rgba(255,255,255,0.82);
+    --card: #fafbfc;
+    --text: #1c1c1e;
+    --text-muted: #5f6672;
+    --text-faint: #9aa0a9;
+    --border: #e9e9ee;
+    --accent: #2b5fd9;
+    --accent-hover: #1e49bf;
+    --chip-bg: #f3f5f9;
+    --chip-text: #475067;
+    --canvas-bg: #ffffff;
+  }
+  [data-theme="dark"] {
+    --bg: #060608;
+    --bg-elevated: rgba(10,10,13,0.82);
+    --card: #0d0d12;
+    --text: #e7e7ea;
+    --text-muted: #9a9aa3;
+    --text-faint: #6a6a73;
+    --border: #1d1d23;
+    --accent: #74a2ff;
+    --accent-hover: #97baff;
+    --chip-bg: #14141a;
+    --chip-text: #b7bcc8;
+    --canvas-bg: #0b0b10;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+    color: var(--text); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); text-decoration: underline; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  .site-header {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    background: var(--bg-elevated); border-bottom: 1px solid var(--border);
+  }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .brand { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; color: var(--text); letter-spacing: .5px; }
+  .brand:hover { text-decoration: none; color: var(--text); }
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; padding: 0;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: transparent; color: var(--text-muted); cursor: pointer;
+  }
+  .toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .toggle svg { width: 17px; height: 17px; }
+  .icon-sun { display: none; }
+  [data-theme="dark"] .icon-sun { display: block; }
+  [data-theme="dark"] .icon-moon { display: none; }
+
+  h1 { font-family: var(--font-serif); font-weight: 600; font-size: 1.6rem; margin: 30px 0 10px; }
+  .intro { color: var(--text-muted); font-size: .95rem; max-width: 74ch; margin: 0 0 6px; }
+  .intro b { color: var(--text); }
+  .hint { color: var(--text-faint); font-size: .88rem; margin: 4px 0 18px; }
+
+  .demo-grid { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 40px; }
+  .stage-col { flex: 1 1 540px; min-width: 0; }
+  .side-col { flex: 0 0 300px; display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: .82rem; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--text-faint); }
+
+  #stage { display: block; width: 100%; border: 1px solid var(--border); border-radius: 12px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+
+  .modes { display: flex; gap: 8px; margin-bottom: 10px; }
+  .mode-btn {
+    flex: 1; padding: 7px 4px; text-align: center; font-size: .88rem; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--text-muted);
+  }
+  .mode-btn.active { border-color: var(--accent); color: var(--accent); background: var(--chip-bg); font-weight: 600; }
+
+  .btn-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .btn {
+    flex: 1; padding: 7px 4px; font-size: .88rem; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: .85rem; color: var(--text-muted); }
+  .slider-row label { flex: 0 0 108px; }
+  .slider-row input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  .slider-row output { flex: 0 0 44px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: .85rem; }
+  .stat { display: flex; justify-content: space-between; gap: 8px; color: var(--text-muted); }
+  .stat b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .chart-canvas { display: block; width: 100%; height: 86px; }
+
+  footer { border-top: 1px solid var(--border); padding: 22px 0 40px; color: var(--text-faint); font-size: .85rem; }
+
+  @media (max-width: 900px) {
+    .demo-grid { flex-direction: column; }
+    .side-col { flex: 1 1 auto; width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html">Yixuan Wang</a>
+      <button id="theme-toggle" class="toggle" type="button" aria-label="Switch theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>RBPF Goal Inference &amp; Obfuscation</h1>
+    <p class="intro">
+      An observer watches an agent's noisy positions and runs a <b>Rao-Blackwellized particle filter</b>
+      over intent hypotheses <i>(goal position, goal radius, arrival time)</i>.
+      In <b>assumed agent</b> mode the agent heads straight to its goal and the belief collapses quickly.
+      In <b>obfuscating agent</b> mode the agent instead steers toward the <b>Chebyshev center</b> of the observer's belief,
+      weaving inside a prescribed tracking envelope — staying ambiguous for as long as the envelope allows.
+      Companion demo for
+      <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a> (IFAC World Congress 2026) and
+      <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a> (IEEE CDC 2026).
+    </p>
+    <p class="hint">Drag the <b>★ goal</b> or the <b>■ start</b> at any time — the filter and controller adapt live. Warm dots are the observer's surviving goal hypotheses.</p>
+
+    <div class="demo-grid">
+      <div class="stage-col">
+        <canvas id="stage"></canvas>
+      </div>
+      <div class="side-col">
+        <div class="card">
+          <div class="modes">
+            <button class="mode-btn" id="mode-nominal" type="button">Assumed agent</button>
+            <button class="mode-btn" id="mode-obf" type="button">Obfuscating agent</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="btn-play" type="button">Pause</button>
+            <button class="btn" id="btn-reset" type="button">Reset</button>
+            <button class="btn" id="btn-rand" type="button">Random goal</button>
+          </div>
+          <div class="slider-row"><label for="s-n">Particles N</label><input id="s-n" type="range" min="200" max="3000" step="100" value="2000"><output id="o-n">2000</output></div>
+          <div class="slider-row"><label for="s-noise">Obs. noise σ</label><input id="s-noise" type="range" min="0.02" max="0.5" step="0.02" value="0.1"><output id="o-noise">0.10</output></div>
+          <div class="slider-row"><label for="s-mu">Obfuscation μ</label><input id="s-mu" type="range" min="0" max="1" step="0.05" value="1"><output id="o-mu">1.00</output></div>
+          <div class="slider-row"><label for="s-speed">Speed</label><input id="s-speed" type="range" min="1" max="8" step="1" value="2"><output id="o-speed">2×</output></div>
+        </div>
+
+        <div class="card">
+          <h3>Live stats</h3>
+          <div class="stats">
+            <div class="stat"><span>time</span><b id="st-t">0.0 s</b></div>
+            <div class="stat"><span>N_eff</span><b id="st-neff">–</b></div>
+            <div class="stat"><span>KL(q*‖q̂)</span><b id="st-kl">–</b></div>
+            <div class="stat"><span>inferred at</span><b id="st-tinf">not yet</b></div>
+            <div class="stat"><span>goal error</span><b id="st-err">–</b></div>
+            <div class="stat"><span>NIS (target 2)</span><b id="st-rs">–</b></div>
+          </div>
+        </div>
+
+        <div class="card"><h3>Location inference error</h3><canvas class="chart-canvas" id="ch-err"></canvas></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">© 2026 Yixuan Wang · <a href="../index.html">back to homepage</a></div>
+  </footer>
+
+<script>
+"use strict";
+/* Faithful JS port of the notebook `cdc_obfuscation_experiments.ipynb`:
+   RBPF with per-particle scalar Kalman filters, paper-style resampling with
+   fresh prior particles, Chebyshev-center obfuscation controller inside a
+   prescribed tracking envelope, and a Monte-Carlo KL leakage estimate. */
+
+// ---------- seeded RNG ----------
+function makeRng(seed) {
+  let a = seed >>> 0;
+  let spare = null;
+  const rng = {
+    random() {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+    gauss() {
+      if (spare !== null) { const v = spare; spare = null; return v; }
+      let u, v, s;
+      do { u = 2 * rng.random() - 1; v = 2 * rng.random() - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+      const m = Math.sqrt(-2 * Math.log(s) / s);
+      spare = v * m; return u * m;
+    },
+  };
+  return rng;
+}
+
+// ---------- config (defaults = notebook CONFIG) ----------
+const CFG = {
+  R: 12.0, rMin: 0.5, rMax: 3.0, tMin: 10.0, tMax: 35.0,
+  dBar: 0.2, dt: 0.1, errStd: 0.1, sigmaD: 0.38,
+  N: 2000, N0frac: 0.25, p0: 0.1,
+  roughenBandwidth: 0.15,
+  sigmaX: 0.38, sigmaR: 0.38, sigmaT: 0.38,
+  muDes: 1.0, rho0: 0.3,
+  mcSamples: 120,
+  goal: [7.0, 7.0], rStar: 1.5, tStar: 25.0, x0: [-3.0, -4.0],
+  tEnd: 30.0,
+};
+
+const LIM = CFG.R + 1.0;
+
+// ---------- math helpers ----------
+function lambdaGain(r, t, Rb, dBar) {
+  r = Math.max(r, 1e-12); t = Math.max(t, 1e-12);
+  const a = 2.0 * dBar / r;
+  const b = Math.log(Math.max(2.0 * Rb / r, 1.0)) / t;
+  return Math.max(a, b, 1e-8);
+}
+function sampleInBall(rng, radius) {
+  let gx, gy, n2;
+  do { gx = rng.gauss(); gy = rng.gauss(); n2 = gx * gx + gy * gy; } while (n2 === 0);
+  const inv = 1 / Math.sqrt(n2);
+  const rr = radius * Math.sqrt(rng.random());
+  return [gx * inv * rr, gy * inv * rr];
+}
+function refPath(t, x0, goal, tStar) {
+  const s = Math.min(Math.max(t / tStar, 0), 1);
+  return [x0[0] + s * (goal[0] - x0[0]), x0[1] + s * (goal[1] - x0[1])];
+}
+function envelope(t) {
+  const rhoT = CFG.rStar;
+  const s = Math.min(Math.max(t / CFG.tStar, 0), 1);
+  return CFG.rho0 + (rhoT - CFG.rho0) * s;
+}
+function logsumexp(arr, idx) {
+  let mx = -Infinity;
+  if (idx) { for (const i of idx) if (arr[i] > mx) mx = arr[i]; }
+  else { for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i]; }
+  if (mx === -Infinity) return -Infinity;
+  let s = 0;
+  if (idx) { for (const i of idx) s += Math.exp(arr[i] - mx); }
+  else { for (let i = 0; i < arr.length; i++) s += Math.exp(arr[i] - mx); }
+  return mx + Math.log(s);
+}
+
+// ---------- Chebyshev center (convex hull + Welzl move-to-front) ----------
+function convexHull(pts) {
+  const p = pts.slice().sort((u, v) => u[0] - v[0] || u[1] - v[1]);
+  if (p.length < 3) return p;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [];
+  for (const q of p) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop();
+    lower.push(q);
+  }
+  const upper = [];
+  for (let i = p.length - 1; i >= 0; i--) {
+    const q = p[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop();
+    upper.push(q);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+function circumcenter3(A, B, C) {
+  const d = 2 * (A[0] * (B[1] - C[1]) + B[0] * (C[1] - A[1]) + C[0] * (A[1] - B[1]));
+  if (Math.abs(d) < 1e-12) return [(A[0] + C[0]) / 2, (A[1] + C[1]) / 2];
+  const a2 = A[0] * A[0] + A[1] * A[1], b2 = B[0] * B[0] + B[1] * B[1], c2 = C[0] * C[0] + C[1] * C[1];
+  return [(a2 * (B[1] - C[1]) + b2 * (C[1] - A[1]) + c2 * (A[1] - B[1])) / d,
+          (a2 * (C[0] - B[0]) + b2 * (A[0] - C[0]) + c2 * (B[0] - A[0])) / d];
+}
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+function minCircle(ptsIn, rng) {
+  const pts = ptsIn.slice();
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(rng.random() * (i + 1)); const t = pts[i]; pts[i] = pts[j]; pts[j] = t; }
+  const tol = 1e-9;
+  let c = pts[0].slice(), r = 0;
+  for (let i = 1; i < pts.length; i++) {
+    if (dist(pts[i], c) <= r + tol) continue;
+    c = pts[i].slice(); r = 0;
+    for (let j = 0; j < i; j++) {
+      if (dist(pts[j], c) <= r + tol) continue;
+      c = [(pts[i][0] + pts[j][0]) / 2, (pts[i][1] + pts[j][1]) / 2];
+      r = dist(pts[i], c);
+      for (let k = 0; k < j; k++) {
+        if (dist(pts[k], c) <= r + tol) continue;
+        c = circumcenter3(pts[i], pts[j], pts[k]);
+        r = dist(pts[k], c);
+      }
+    }
+  }
+  return c;
+}
+function chebyshevCenter(xh, n, rng) {
+  const pts = [];
+  for (let i = 0; i < n; i++) pts.push([xh[2 * i], xh[2 * i + 1]]);
+  const hull = convexHull(pts);
+  return minCircle(hull.length >= 2 ? hull : pts, rng);
+}
+
+// ---------- RBPF ----------
+class RBPF {
+  constructor(cfg, rng) {
+    this.cfg = cfg; this.rng = rng;
+    this.N = cfg.N | 0;
+    this.N0 = Math.floor(cfg.N0frac * this.N);
+    this.varObs = cfg.errStd * cfg.errStd;
+    this.varProc = (cfg.sigmaD * cfg.dBar) ** 2;
+    const N = this.N;
+    this.gx = new Float64Array(N); this.gy = new Float64Array(N);
+    this.radii = new Float64Array(N); this.times = new Float64Array(N);
+    this.lam = new Float64Array(N);
+    this.xh = new Float64Array(2 * N);
+    this.p = new Float64Array(N).fill(cfg.p0);
+    this.logW = new Float64Array(N).fill(-Math.log(N));
+    this.currentTime = 0.0;
+    this.resampleCount = 0;
+    this.lastNis = NaN;
+    this.lastY = [0, 0];
+    this.reduced = Int32Array.from({ length: N }, (_, i) => i);
+    for (let i = 0; i < N; i++) this.drawPriorInto(i);
+  }
+  drawPriorInto(i) {
+    const c = this.cfg, rng = this.rng;
+    const g = sampleInBall(rng, c.R);
+    this.gx[i] = g[0]; this.gy[i] = g[1];
+    this.radii[i] = c.rMin + (c.rMax - c.rMin) * rng.random();
+    this.times[i] = c.tMin + (c.tMax - c.tMin) * rng.random();
+    this.lam[i] = lambdaGain(this.radii[i], this.times[i], c.R, c.dBar);
+  }
+  initialize(y) {
+    for (let i = 0; i < this.N; i++) { this.xh[2 * i] = y[0]; this.xh[2 * i + 1] = y[1]; }
+    this.lastY = [y[0], y[1]];
+    this.currentTime = 0.0;
+  }
+  weights() {
+    const w = new Float64Array(this.N);
+    for (let i = 0; i < this.N; i++) w[i] = Math.exp(this.logW[i]);
+    return w;
+  }
+  nEff() {
+    let s = 0;
+    for (let i = 0; i < this.N; i++) { const w = Math.exp(this.logW[i]); s += w * w; }
+    return Math.floor(1.0 / s);
+  }
+  update(y) {
+    const c = this.cfg, N = this.N, dt = c.dt;
+    this.currentTime += dt;
+    this.lastY = [y[0], y[1]];
+    // MAP hypothesis before this update, for the NIS consistency diagnostic
+    let imap = 0;
+    for (let i = 1; i < N; i++) if (this.logW[i] > this.logW[imap]) imap = i;
+    for (let i = 0; i < N; i++) {
+      const lam = this.lam[i];
+      const px = this.xh[2 * i] + dt * (-lam * (this.xh[2 * i] - this.gx[i]));
+      const py = this.xh[2 * i + 1] + dt * (-lam * (this.xh[2 * i + 1] - this.gy[i]));
+      const aSq = (1 - lam * dt) * (1 - lam * dt);
+      const pPrior = aSq * this.p[i] + dt * dt * this.varProc;
+      const ix = y[0] - px, iy = y[1] - py;
+      const s = pPrior + this.varObs;
+      if (i === imap) this.lastNis = (ix * ix + iy * iy) / s;
+      const logLik = -0.5 * (ix * ix + iy * iy) / s - Math.log(2 * Math.PI * s);
+      const gain = pPrior / s;
+      this.xh[2 * i] = px + gain * ix;
+      this.xh[2 * i + 1] = py + gain * iy;
+      this.p[i] = (1 - gain) * pPrior;
+      this.logW[i] += logLik;
+    }
+    const lse = logsumexp(this.logW);
+    for (let i = 0; i < N; i++) this.logW[i] -= lse;
+
+    const keepCount = Math.min(Math.max(this.nEff(), 1), N);
+    const order = Int32Array.from({ length: N }, (_, i) => i);
+    order.sort((a, b) => this.logW[b] - this.logW[a]);
+    const effective = order.slice(0, keepCount);
+
+    let resampled = false;
+    if (this.nEff() < this.N0) {
+      this.resamplePaper(effective);
+      resampled = true;
+      this.resampleCount++;
+    } else {
+      this.reduced = effective;
+    }
+    return resampled;
+  }
+  resamplePaper(keep) {
+    const c = this.cfg, N = this.N;
+    let wEff = 0;
+    for (const i of keep) wEff += Math.exp(this.logW[i]);
+    const rep = [];
+    for (const i of keep) {
+      const copies = Math.floor(Math.exp(this.logW[i]) * N / wEff);
+      for (let k = 0; k < copies; k++) rep.push(i);
+    }
+    const nRep = rep.length, nNew = N - nRep;
+    const gx = new Float64Array(N), gy = new Float64Array(N);
+    const radii = new Float64Array(N), times = new Float64Array(N);
+    const xh = new Float64Array(2 * N), p = new Float64Array(N);
+    for (let j = 0; j < nRep; j++) {
+      const i = rep[j];
+      gx[j] = this.gx[i]; gy[j] = this.gy[i];
+      radii[j] = this.radii[i]; times[j] = this.times[i];
+      xh[2 * j] = this.xh[2 * i]; xh[2 * j + 1] = this.xh[2 * i + 1];
+      p[j] = this.p[i];
+    }
+    // adaptive roughening of the replicated copies: bandwidth proportional to
+    // the spread of the replicated cloud (notebook cfg["roughen"])
+    if (nRep > 1) {
+      const b = c.roughenBandwidth;
+      let mx = 0, my = 0, mr = 0, mt = 0;
+      for (let j = 0; j < nRep; j++) { mx += gx[j]; my += gy[j]; mr += radii[j]; mt += times[j]; }
+      mx /= nRep; my /= nRep; mr /= nRep; mt /= nRep;
+      let vx = 0, vy = 0, vr = 0, vt = 0;
+      for (let j = 0; j < nRep; j++) {
+        vx += (gx[j] - mx) ** 2; vy += (gy[j] - my) ** 2;
+        vr += (radii[j] - mr) ** 2; vt += (times[j] - mt) ** 2;
+      }
+      const hX = b * Math.sqrt(vx / nRep) + 1e-3;
+      const hY = b * Math.sqrt(vy / nRep) + 1e-3;
+      const hR = b * Math.sqrt(vr / nRep) + 1e-3;
+      const hT = b * Math.sqrt(vt / nRep) + 1e-3;
+      for (let j = 0; j < nRep; j++) {
+        gx[j] += hX * this.rng.gauss();
+        gy[j] += hY * this.rng.gauss();
+        const nrm = Math.hypot(gx[j], gy[j]);
+        if (nrm > c.R) { gx[j] *= c.R / nrm; gy[j] *= c.R / nrm; }
+        radii[j] = Math.min(Math.max(radii[j] + hR * this.rng.gauss(), c.rMin), c.rMax);
+        times[j] = Math.min(Math.max(times[j] + hT * this.rng.gauss(), c.tMin), c.tMax);
+      }
+    }
+    this.gx = gx; this.gy = gy; this.radii = radii; this.times = times; this.xh = xh; this.p = p;
+    for (let j = nRep; j < N; j++) {
+      this.drawPriorInto(j);
+      // reinit_xhat = "measurement": fresh hypotheses anchor at the last observation
+      this.xh[2 * j] = this.lastY[0]; this.xh[2 * j + 1] = this.lastY[1];
+      this.p[j] = c.p0;
+    }
+    for (let i = 0; i < N; i++) this.lam[i] = lambdaGain(this.radii[i], this.times[i], c.R, c.dBar);
+    this.logW.fill(-Math.log(N));
+    this.reduced = Int32Array.from({ length: nRep }, (_, j) => j);
+  }
+  estimateReduced() {
+    const c = this.cfg;
+    let sw = 0, ex = 0, ey = 0, er = 0, et = 0;
+    for (const i of this.reduced) sw += Math.exp(this.logW[i]);
+    if (sw <= 0) sw = 1;
+    for (const i of this.reduced) {
+      const w = Math.exp(this.logW[i]) / sw;
+      ex += w * this.gx[i]; ey += w * this.gy[i];
+      er += w * this.radii[i]; et += w * this.times[i];
+    }
+    er = Math.min(Math.max(er, c.rMin), c.rMax);
+    et = Math.min(Math.max(et, c.tMin), c.tMax);
+    return [ex, ey, er, et];
+  }
+  // Monte-Carlo KL(q* || q_hat) with the complete estimator (notebook mc_kl)
+  mcKL(goal, rStar, tStar, rng) {
+    const c = this.cfg, N = this.N, m = c.mcSamples;
+    const stds = [c.sigmaX, c.sigmaX, c.sigmaR, c.sigmaT];
+    const mu = [goal[0], goal[1], rStar, tStar];
+    let acc = 0;
+    const tmp = new Float64Array(N);
+    for (let s = 0; s < m; s++) {
+      const z0 = mu[0] + stds[0] * rng.gauss(), z1 = mu[1] + stds[1] * rng.gauss();
+      const z2 = mu[2] + stds[2] * rng.gauss(), z3 = mu[3] + stds[3] * rng.gauss();
+      const a0 = (z0 - mu[0]) / stds[0], a1 = (z1 - mu[1]) / stds[1];
+      const a2 = (z2 - mu[2]) / stds[2], a3 = (z3 - mu[3]) / stds[3];
+      const logQStar = -0.5 * (a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3);
+      for (let i = 0; i < N; i++) {
+        const d0 = (z0 - this.gx[i]) / stds[0], d1 = (z1 - this.gy[i]) / stds[1];
+        const d2 = (z2 - this.radii[i]) / stds[2], d3 = (z3 - this.times[i]) / stds[3];
+        tmp[i] = this.logW[i] - 0.5 * (d0 * d0 + d1 * d1 + d2 * d2 + d3 * d3);
+      }
+      acc += logQStar - logsumexp(tmp);
+    }
+    return acc / m;
+  }
+}
+
+// ---------- simulation ----------
+const sim = {
+  mode: "nominal",      // "nominal" | "obf"
+  running: true,
+  seed: 2026,
+  filt: null, rng: null, mebRng: null, klRng: null,
+  x: [0, 0], y: [0, 0], t: 0,
+  path: [], obs: [],
+  hist: { t: [], kl: [], goalErr: [], mu: [] },
+  lastViolationT: 0, tInf: null, klThreshold0: null, nisEma: null,
+  ybar: null, done: false,
+};
+
+function lamStar() {
+  return lambdaGain(CFG.rStar, CFG.tStar, dist(CFG.x0, CFG.goal), CFG.dBar);
+}
+
+function resetSim() {
+  sim.seed += 1;
+  sim.rng = makeRng(sim.seed);
+  sim.mebRng = makeRng(sim.seed + 7);
+  sim.klRng = makeRng(sim.seed + 13);
+  sim.filt = new RBPF(CFG, makeRng(sim.seed + 99));
+  sim.x = CFG.x0.slice();
+  sim.y = [sim.x[0] + CFG.errStd * sim.rng.gauss(), sim.x[1] + CFG.errStd * sim.rng.gauss()];
+  sim.filt.initialize(sim.y);
+  sim.t = 0;
+  sim.path = [sim.x.slice()];
+  sim.obs = [sim.y.slice()];
+  sim.hist = { t: [], kl: [], goalErr: [], mu: [] };
+  sim.lastViolationT = 0; sim.tInf = null; sim.klThreshold0 = null; sim.nisEma = null;
+  sim.ybar = null; sim.done = false;
+  recordHist();
+  // the KL of the prior belief becomes this run's inference threshold epsilon
+  sim.klThreshold0 = sim.hist.kl[0];
+  updateStats();
+}
+
+function recordHist() {
+  const h = sim.hist;
+  h.t.push(sim.t);
+  const kl = sim.filt.mcKL(CFG.goal, CFG.rStar, CFG.tStar, sim.klRng);
+  h.kl.push(kl);
+  // inference time: KL below the initial (prior) KL and staying there
+  const eps = sim.klThreshold0;
+  if (eps === null || kl >= eps) { sim.lastViolationT = sim.t; sim.tInf = null; }
+  else if (sim.tInf === null) { sim.tInf = sim.t; }
+  // location inference error: inferred intent position vs the actual goal
+  const est = sim.filt.estimateReduced();
+  h.goalErr.push(dist([est[0], est[1]], CFG.goal));
+}
+
+function stepSim() {
+  if (sim.done) return;
+  const dt = CFG.dt;
+  const tNext = sim.t + dt;
+  let u;
+  if (sim.mode === "nominal") {
+    const ls = lamStar();
+    u = [-ls * (sim.x[0] - CFG.goal[0]), -ls * (sim.x[1] - CFG.goal[1])];
+    sim.ybar = null;
+  } else {
+    const ybar = chebyshevCenter(sim.filt.xh, sim.filt.N, sim.mebRng);
+    sim.ybar = ybar;
+    const xRefNext = refPath(tNext, CFG.x0, CFG.goal, CFG.tStar);
+    const gap = dist(xRefNext, ybar);
+    const rhoNext = envelope(tNext);
+    const muMax = gap <= 1e-9 ? 1.0 : Math.min(1.0, Math.max(0.0, rhoNext - CFG.dBar * dt) / gap);
+    const mu = Math.min(CFG.muDes, muMax);
+    sim.hist.mu.push(mu);
+    u = [mu * (ybar[0] - sim.x[0]) / dt + (1 - mu) * (xRefNext[0] - sim.x[0]) / dt,
+         mu * (ybar[1] - sim.x[1]) / dt + (1 - mu) * (xRefNext[1] - sim.x[1]) / dt];
+  }
+  const d = sampleInBall(sim.rng, CFG.dBar);
+  sim.x = [sim.x[0] + dt * (u[0] + d[0]), sim.x[1] + dt * (u[1] + d[1])];
+  sim.y = [sim.x[0] + CFG.errStd * sim.rng.gauss(), sim.x[1] + CFG.errStd * sim.rng.gauss()];
+  sim.filt.update(sim.y);
+  if (isFinite(sim.filt.lastNis)) {
+    sim.nisEma = sim.nisEma === null ? sim.filt.lastNis
+      : 0.95 * sim.nisEma + 0.05 * sim.filt.lastNis;
+  }
+  sim.t = tNext;
+  sim.path.push(sim.x.slice());
+  sim.obs.push(sim.y.slice());
+  recordHist();
+  if (sim.t >= CFG.tEnd - 1e-9) sim.done = true;
+}
+
+// ---------- theme palette ----------
+let PAL = {};
+function refreshPalette() {
+  const cs = getComputedStyle(document.documentElement);
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  PAL = {
+    dark,
+    bg: cs.getPropertyValue("--canvas-bg").trim() || (dark ? "#0b0b10" : "#ffffff"),
+    text: cs.getPropertyValue("--text").trim(),
+    muted: cs.getPropertyValue("--text-muted").trim(),
+    faint: cs.getPropertyValue("--text-faint").trim(),
+    border: cs.getPropertyValue("--border").trim(),
+    accent: cs.getPropertyValue("--accent").trim(),
+    workspace: dark ? "#3a3a44" : "#c9c9d2",
+    ref: dark ? "#b6b6c2" : "#3a3a42",
+    nominal: "#3f7fd4",
+    obf: "#d64545",
+    start: "#33a352",
+    est: "#9467bd",
+    envFill: dark ? "rgba(214,69,69,0.12)" : "rgba(214,69,69,0.08)",
+    cheb: dark ? "#8d8d99" : "#6a6a73",
+  };
+}
+
+// ---------- rendering ----------
+const stage = document.getElementById("stage");
+const sctx = stage.getContext("2d");
+let stageSize = 600;
+
+function resizeCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = stage.parentElement.clientWidth;
+  stageSize = Math.max(320, w);
+  stage.style.height = stageSize + "px";
+  stage.width = Math.round(stageSize * dpr);
+  stage.height = Math.round(stageSize * dpr);
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (const id of ["ch-err"]) {
+    const c = document.getElementById(id);
+    const cw = c.clientWidth || 270, ch = c.clientHeight || 86;
+    c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr);
+    c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+}
+const W2P = v => (v + LIM) / (2 * LIM) * stageSize;
+const w2p = pt => [W2P(pt[0]), stageSize - W2P(pt[1])];
+
+function drawStage() {
+  const ctx = sctx;
+  ctx.clearRect(0, 0, stageSize, stageSize);
+
+  // workspace boundary
+  ctx.beginPath();
+  ctx.setLineDash([2, 5]);
+  ctx.strokeStyle = PAL.workspace;
+  ctx.lineWidth = 1.2;
+  const c0 = w2p([0, 0]);
+  ctx.arc(c0[0], c0[1], W2P(CFG.R) - W2P(0), 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // tracking envelope band (obfuscation mode)
+  if (sim.mode === "obf") {
+    const g = CFG.goal, x0 = CFG.x0;
+    const L = dist(g, x0);
+    if (L > 1e-6) {
+      const nx = -(g[1] - x0[1]) / L, ny = (g[0] - x0[0]) / L;
+      const M = 80;
+      ctx.beginPath();
+      for (let i = 0; i <= M; i++) {
+        const tt = CFG.tStar * i / M;
+        const r = refPath(tt, x0, g, CFG.tStar), rho = envelope(tt);
+        const p = w2p([r[0] + rho * nx, r[1] + rho * ny]);
+        i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+      }
+      for (let i = M; i >= 0; i--) {
+        const tt = CFG.tStar * i / M;
+        const r = refPath(tt, x0, g, CFG.tStar), rho = envelope(tt);
+        const p = w2p([r[0] - rho * nx, r[1] - rho * ny]);
+        ctx.lineTo(p[0], p[1]);
+      }
+      ctx.closePath();
+      ctx.fillStyle = PAL.envFill;
+      ctx.fill();
+    }
+  }
+
+  // reference path + schedule point
+  ctx.beginPath();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = PAL.ref;
+  ctx.lineWidth = 1.1;
+  const pa = w2p(CFG.x0), pb = w2p(CFG.goal);
+  ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const rp = w2p(refPath(sim.t, CFG.x0, CFG.goal, CFG.tStar));
+  ctx.beginPath(); ctx.fillStyle = PAL.ref;
+  ctx.arc(rp[0], rp[1], 3.2, 0, 2 * Math.PI); ctx.fill();
+
+  // particles: every live goal hypothesis, warmer and bigger with weight
+  const f = sim.filt;
+  const logN = Math.log(f.N);
+  for (let i = 0; i < f.N; i++) {
+    const w = Math.exp(f.logW[i]);
+    if (w < 0.2 / f.N) continue;
+    const val = Math.min(Math.max(1 + Math.log(Math.max(w, 1e-300)) / logN, 0), 1);
+    const p = w2p([f.gx[i], f.gy[i]]);
+    ctx.beginPath();
+    ctx.fillStyle = `hsla(${55 - 55 * val}, 88%, ${PAL.dark ? 60 - 10 * val : 52 - 12 * val}%, ${0.16 + 0.55 * val})`;
+    ctx.arc(p[0], p[1], 1.3 + 3.6 * val, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  // Chebyshev center of the position-belief cloud
+  if (sim.ybar) {
+    const p = w2p(sim.ybar);
+    ctx.strokeStyle = PAL.cheb; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(p[0] - 5, p[1] - 5); ctx.lineTo(p[0] + 5, p[1] + 5);
+    ctx.moveTo(p[0] - 5, p[1] + 5); ctx.lineTo(p[0] + 5, p[1] - 5);
+    ctx.stroke();
+  }
+
+  // agent path
+  ctx.beginPath();
+  ctx.strokeStyle = sim.mode === "nominal" ? PAL.nominal : PAL.obf;
+  ctx.lineWidth = 2;
+  for (let i = 0; i < sim.path.length; i++) {
+    const p = w2p(sim.path[i]);
+    i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+  }
+  ctx.stroke();
+
+  // current observation
+  const oy = w2p(sim.y);
+  ctx.beginPath(); ctx.fillStyle = "#e03131"; ctx.strokeStyle = PAL.bg; ctx.lineWidth = 1.5;
+  ctx.arc(oy[0], oy[1], 4.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+  // current agent position
+  const ap = w2p(sim.x);
+  ctx.beginPath(); ctx.fillStyle = sim.mode === "nominal" ? PAL.nominal : PAL.obf;
+  ctx.strokeStyle = PAL.bg; ctx.lineWidth = 1.5;
+  ctx.arc(ap[0], ap[1], 5.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+  // start
+  const sp = w2p(CFG.x0);
+  ctx.fillStyle = PAL.start;
+  ctx.fillRect(sp[0] - 5.5, sp[1] - 5.5, 11, 11);
+
+  // true goal: star + circle
+  drawStar(ctx, pb[0], pb[1], 10, PAL.accent);
+  ctx.beginPath();
+  ctx.strokeStyle = PAL.accent; ctx.lineWidth = 1.8;
+  ctx.arc(pb[0], pb[1], W2P(CFG.rStar) - W2P(0), 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // estimated goal: triangle + dashed circle
+  const est = f.estimateReduced();
+  const ep = w2p([est[0], est[1]]);
+  ctx.beginPath();
+  ctx.fillStyle = PAL.est; ctx.strokeStyle = PAL.bg; ctx.lineWidth = 1.4;
+  ctx.moveTo(ep[0], ep[1] - 7); ctx.lineTo(ep[0] - 6.5, ep[1] + 5); ctx.lineTo(ep[0] + 6.5, ep[1] + 5);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = PAL.est; ctx.lineWidth = 1.6;
+  ctx.arc(ep[0], ep[1], W2P(est[2]) - W2P(0), 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // legend
+  drawLegend(ctx);
+
+  if (sim.done) {
+    ctx.fillStyle = PAL.dark ? "rgba(10,10,14,0.72)" : "rgba(255,255,255,0.72)";
+    ctx.fillRect(0, stageSize / 2 - 26, stageSize, 52);
+    ctx.fillStyle = PAL.text;
+    ctx.font = "600 15px " + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = "center";
+    ctx.fillText("Run complete — press Reset (or switch mode) to run again", stageSize / 2, stageSize / 2 + 5);
+    ctx.textAlign = "left";
+  }
+}
+
+function drawStar(ctx, cx, cy, R, color) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const ang = -Math.PI / 2 + i * Math.PI / 5;
+    const rr = i % 2 === 0 ? R : R * 0.45;
+    const px = cx + rr * Math.cos(ang), py = cy + rr * Math.sin(ang);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = PAL.bg; ctx.lineWidth = 1.4;
+  ctx.fill(); ctx.stroke();
+}
+
+function drawLegend(ctx) {
+  const items = [
+    [sim.mode === "nominal" ? PAL.nominal : PAL.obf, sim.mode === "nominal" ? "assumed agent" : "obfuscating agent"],
+    ["#e03131", "observation"],
+    [PAL.accent, "true goal"],
+    [PAL.est, "estimated goal"],
+  ];
+  if (sim.mode === "obf") items.push([PAL.cheb, "Chebyshev center"]);
+  ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+  const boxW = 148, lineH = 19, pad = 9;
+  const x0p = stageSize - boxW - 12, y0p = stageSize - (items.length * lineH + pad * 2) - 12;
+  ctx.fillStyle = PAL.dark ? "rgba(13,13,18,0.82)" : "rgba(255,255,255,0.85)";
+  ctx.strokeStyle = PAL.border;
+  ctx.beginPath();
+  ctx.roundRect(x0p, y0p, boxW, items.length * lineH + pad * 2, 8);
+  ctx.fill(); ctx.stroke();
+  items.forEach(([col, label], i) => {
+    const yy = y0p + pad + i * lineH + 9;
+    ctx.beginPath(); ctx.fillStyle = col;
+    ctx.arc(x0p + pad + 5, yy, 4.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = PAL.muted;
+    ctx.fillText(label, x0p + pad + 16, yy + 4);
+  });
+}
+
+function drawChart(id, series, opts) {
+  const c = document.getElementById(id);
+  const ctx = c.getContext("2d");
+  const w = c.clientWidth || 270, h = c.clientHeight || 86;
+  ctx.clearRect(0, 0, w, h);
+  const tMaxAxis = CFG.tEnd;
+  let yMax = opts.yMax;
+  if (!yMax) {
+    yMax = 1e-9;
+    for (const s of series) for (const v of s.data) if (isFinite(v) && v > yMax) yMax = v;
+    yMax *= 1.08;
+  }
+  const X = i => (sim.hist.t[i] / tMaxAxis) * (w - 6) + 3;
+  const Y = v => h - 4 - Math.min(Math.max(v / yMax, 0), 1) * (h - 10);
+  if (opts.hline !== undefined) {
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = opts.hlineColor || PAL.faint;
+    ctx.lineWidth = 1;
+    ctx.moveTo(3, Y(opts.hline)); ctx.lineTo(w - 3, Y(opts.hline));
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const s of series) {
+    ctx.beginPath();
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 1.6;
+    if (s.dash) ctx.setLineDash(s.dash);
+    let started = false;
+    for (let i = 0; i < s.data.length; i++) {
+      const v = s.data[i];
+      if (!isFinite(v)) continue;
+      const px = X(i), py = Y(v);
+      started ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      started = true;
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.fillStyle = PAL.faint;
+  ctx.font = "10px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillText(Math.round(yMax * 100) / 100, 5, 11);
+}
+
+function updateStats() {
+  const f = sim.filt;
+  document.getElementById("st-t").textContent = sim.t.toFixed(1) + " s";
+  document.getElementById("st-neff").textContent = f.nEff();
+  const kl = sim.hist.kl[sim.hist.kl.length - 1];
+  document.getElementById("st-kl").textContent = kl === undefined ? "–"
+    : kl.toFixed(1) + " / ε " + (sim.klThreshold0 === null ? "–" : sim.klThreshold0.toFixed(1));
+  document.getElementById("st-tinf").textContent = sim.tInf === null ? "not yet" : sim.tInf.toFixed(1) + " s";
+  const est = f.estimateReduced();
+  document.getElementById("st-err").textContent = dist([est[0], est[1]], CFG.goal).toFixed(2) + " m";
+  document.getElementById("st-rs").textContent = sim.nisEma === null ? "–" : sim.nisEma.toFixed(2);
+}
+
+// ---------- main loop ----------
+let lastFrame = performance.now();
+let stepAccum = 0;
+let speed = 2;
+function frame(now) {
+  const elapsed = Math.min((now - lastFrame) / 1000, 0.25);
+  lastFrame = now;
+  if (sim.running && !sim.done) {
+    stepAccum += elapsed * speed;
+    let steps = 0;
+    while (stepAccum >= CFG.dt && steps < 40) { stepSim(); stepAccum -= CFG.dt; steps++; }
+  }
+  drawStage();
+  drawChart("ch-err", [
+    { data: sim.hist.goalErr, color: sim.mode === "nominal" ? PAL.nominal : PAL.obf },
+  ], {});
+  updateStats();
+  requestAnimationFrame(frame);
+}
+
+// ---------- interactions ----------
+function setMode(mode) {
+  sim.mode = mode;
+  document.getElementById("mode-nominal").classList.toggle("active", mode === "nominal");
+  document.getElementById("mode-obf").classList.toggle("active", mode === "obf");
+  resetSim();
+}
+document.getElementById("mode-nominal").addEventListener("click", () => setMode("nominal"));
+document.getElementById("mode-obf").addEventListener("click", () => setMode("obf"));
+
+const btnPlay = document.getElementById("btn-play");
+btnPlay.addEventListener("click", () => {
+  sim.running = !sim.running;
+  btnPlay.textContent = sim.running ? "Pause" : "Play";
+});
+document.getElementById("btn-reset").addEventListener("click", () => {
+  resetSim();
+  if (!sim.running) { sim.running = true; btnPlay.textContent = "Pause"; }
+});
+document.getElementById("btn-rand").addEventListener("click", () => {
+  const rng = makeRng((Math.random() * 1e9) | 0);
+  let g;
+  do { g = sampleInBall(rng, CFG.R - CFG.rStar - 0.5); } while (dist(g, CFG.x0) < 6);
+  CFG.goal = g;
+});
+
+function bindSlider(id, outId, fmt, onChange, onCommit) {
+  const el = document.getElementById(id), out = document.getElementById(outId);
+  el.addEventListener("input", () => { out.textContent = fmt(parseFloat(el.value)); if (onChange) onChange(parseFloat(el.value)); });
+  if (onCommit) el.addEventListener("change", () => onCommit(parseFloat(el.value)));
+}
+bindSlider("s-n", "o-n", v => v.toFixed(0), null, v => { CFG.N = v | 0; resetSim(); });
+bindSlider("s-noise", "o-noise", v => v.toFixed(2), null, v => { CFG.errStd = v; resetSim(); });
+bindSlider("s-mu", "o-mu", v => v.toFixed(2), v => { CFG.muDes = v; });
+bindSlider("s-speed", "o-speed", v => v.toFixed(0) + "×", v => { speed = v; });
+
+// dragging goal / start
+let dragging = null;
+function pointerWorld(ev) {
+  const rect = stage.getBoundingClientRect();
+  const px = (ev.clientX - rect.left) / rect.width * stageSize;
+  const py = (ev.clientY - rect.top) / rect.height * stageSize;
+  return [px / stageSize * 2 * LIM - LIM, (stageSize - py) / stageSize * 2 * LIM - LIM];
+}
+stage.addEventListener("pointerdown", ev => {
+  const wpt = pointerWorld(ev);
+  if (dist(wpt, CFG.goal) < 1.6) dragging = "goal";
+  else if (dist(wpt, CFG.x0) < 1.6) dragging = "start";
+  if (dragging) { stage.setPointerCapture(ev.pointerId); stage.style.cursor = "grabbing"; }
+});
+stage.addEventListener("pointermove", ev => {
+  if (!dragging) return;
+  const wpt = pointerWorld(ev);
+  const maxR = CFG.R - (dragging === "goal" ? CFG.rStar : 1.0) - 0.2;
+  const n = Math.hypot(wpt[0], wpt[1]);
+  const clamped = n > maxR ? [wpt[0] / n * maxR, wpt[1] / n * maxR] : wpt;
+  if (dragging === "goal") {
+    if (dist(clamped, CFG.x0) > 2.5) CFG.goal = clamped;
+  } else {
+    if (dist(clamped, CFG.goal) > 2.5) { CFG.x0 = clamped; resetSim(); }
+  }
+});
+stage.addEventListener("pointerup", () => { dragging = null; stage.style.cursor = "grab"; });
+
+// theme toggle
+(function () {
+  var btn = document.getElementById("theme-toggle");
+  btn.addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    refreshPalette();
+  });
+})();
+
+// ---------- boot ----------
+window.addEventListener("resize", () => { resizeCanvases(); });
+refreshPalette();
+resizeCanvases();
+const qMode = new URLSearchParams(location.search).get("mode");
+setMode(qMode === "obfuscation" || qMode === "obf" ? "obf" : "nominal");
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
