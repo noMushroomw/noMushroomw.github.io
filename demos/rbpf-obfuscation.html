@@ -95,7 +95,9 @@
 
   .demo-grid { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 40px; }
   .stage-col { flex: 1 1 540px; min-width: 0; }
-  .side-col { flex: 0 0 300px; display: flex; flex-direction: column; gap: 12px; }
+  .side-col { flex: 0 0 300px; display: flex; flex-direction: column; gap: 12px; align-self: stretch; }
+  .card.grow { flex: 1; display: flex; flex-direction: column; min-height: 150px; }
+  .card.grow .chart-canvas { flex: 1; height: auto; min-height: 86px; }
 
   .card {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -195,7 +197,7 @@
           </div>
         </div>
 
-        <div class="card"><h3>Location inference error</h3><canvas class="chart-canvas" id="ch-err"></canvas></div>
+        <div class="card grow"><h3>Location inference error</h3><canvas class="chart-canvas" id="ch-err"></canvas></div>
       </div>
     </div>
   </main>
