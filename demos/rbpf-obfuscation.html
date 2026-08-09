@@ -192,7 +192,6 @@
             <div class="stat"><span>KL(q*‖q̂)</span><b id="st-kl">–</b></div>
             <div class="stat"><span>inferred at</span><b id="st-tinf">not yet</b></div>
             <div class="stat"><span>goal error</span><b id="st-err">–</b></div>
-            <div class="stat"><span>NIS (target 2)</span><b id="st-rs">–</b></div>
           </div>
         </div>
 
@@ -527,7 +526,7 @@ const sim = {
   x: [0, 0], y: [0, 0], t: 0,
   path: [], obs: [],
   hist: { t: [], kl: [], goalErr: [], mu: [] },
-  lastViolationT: 0, tInf: null, klThreshold0: null, nisEma: null,
+  lastViolationT: 0, tInf: null, klThreshold0: null,
   ybar: null, done: false,
 };
 
@@ -548,7 +547,7 @@ function resetSim() {
   sim.path = [sim.x.slice()];
   sim.obs = [sim.y.slice()];
   sim.hist = { t: [], kl: [], goalErr: [], mu: [] };
-  sim.lastViolationT = 0; sim.tInf = null; sim.klThreshold0 = null; sim.nisEma = null;
+  sim.lastViolationT = 0; sim.tInf = null; sim.klThreshold0 = null;
   sim.ybar = null; sim.done = false;
   recordHist();
   // the KL of the prior belief becomes this run's inference threshold epsilon
@@ -595,10 +594,6 @@ function stepSim() {
   sim.x = [sim.x[0] + dt * (u[0] + d[0]), sim.x[1] + dt * (u[1] + d[1])];
   sim.y = [sim.x[0] + CFG.errStd * sim.rng.gauss(), sim.x[1] + CFG.errStd * sim.rng.gauss()];
   sim.filt.update(sim.y);
-  if (isFinite(sim.filt.lastNis)) {
-    sim.nisEma = sim.nisEma === null ? sim.filt.lastNis
-      : 0.95 * sim.nisEma + 0.05 * sim.filt.lastNis;
-  }
   sim.t = tNext;
   sim.path.push(sim.x.slice());
   sim.obs.push(sim.y.slice());
@@ -693,18 +688,21 @@ function drawStage() {
     }
   }
 
-  // reference path + schedule point
-  ctx.beginPath();
-  ctx.setLineDash([6, 5]);
-  ctx.strokeStyle = PAL.ref;
-  ctx.lineWidth = 1.1;
-  const pa = w2p(CFG.x0), pb = w2p(CFG.goal);
-  ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  const rp = w2p(refPath(sim.t, CFG.x0, CFG.goal, CFG.tStar));
-  ctx.beginPath(); ctx.fillStyle = PAL.ref;
-  ctx.arc(rp[0], rp[1], 3.2, 0, 2 * Math.PI); ctx.fill();
+  // reference path + schedule point (only meaningful for the obfuscation story)
+  const pb = w2p(CFG.goal);
+  if (sim.mode === "obf") {
+    ctx.beginPath();
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = PAL.ref;
+    ctx.lineWidth = 1.1;
+    const pa = w2p(CFG.x0);
+    ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const rp = w2p(refPath(sim.t, CFG.x0, CFG.goal, CFG.tStar));
+    ctx.beginPath(); ctx.fillStyle = PAL.ref;
+    ctx.arc(rp[0], rp[1], 3.2, 0, 2 * Math.PI); ctx.fill();
+  }
 
   // particles: every live goal hypothesis, warmer and bigger with weight
   const f = sim.filt;
@@ -811,6 +809,7 @@ function drawLegend(ctx) {
       label: sim.mode === "nominal" ? "assumed agent" : "obfuscating agent" },
   ];
   if (sim.mode === "nominal") items.push({ shape: "dot", color: "#e03131", label: "observation" });
+  if (sim.mode === "obf") items.push({ shape: "dot", color: PAL.ref, label: "reference path" });
   items.push({ shape: "star", color: PAL.accent, label: "true goal" });
   items.push({ shape: "triangle", color: PAL.est, label: "estimated goal" });
   ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
@@ -887,12 +886,10 @@ function updateStats() {
   document.getElementById("st-t").textContent = sim.t.toFixed(1) + " s";
   document.getElementById("st-neff").textContent = f.nEff();
   const kl = sim.hist.kl[sim.hist.kl.length - 1];
-  document.getElementById("st-kl").textContent = kl === undefined ? "–"
-    : kl.toFixed(1) + " / ε " + (sim.klThreshold0 === null ? "–" : sim.klThreshold0.toFixed(1));
+  document.getElementById("st-kl").textContent = kl === undefined ? "–" : kl.toFixed(1);
   document.getElementById("st-tinf").textContent = sim.tInf === null ? "not yet" : sim.tInf.toFixed(1) + " s";
   const est = f.estimateReduced();
   document.getElementById("st-err").textContent = dist([est[0], est[1]], CFG.goal).toFixed(2) + " m";
-  document.getElementById("st-rs").textContent = sim.nisEma === null ? "–" : sim.nisEma.toFixed(2);
 }
 
 // ---------- main loop ----------
