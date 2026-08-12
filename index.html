@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yixuan Wang</title>
-<meta name="description" content="Yixuan Wang — PhD student at the University of Florida researching nonlinear control theory, machine learning, and robotics.">
+<meta name="description" content="Yixuan Wang — PhD student at the University of Florida developing control-theoretic foundations for modern machine learning.">
 <meta name="theme-color" content="#ffffff">
 
 <!-- Set theme before paint to avoid a flash.
@@ -163,9 +163,7 @@
   .news-body strong { font-weight: 600; }
 
   /* Publications */
-  .pub-list { list-style: none; margin: 0 0 8px; padding: 0; }
-  .pub-cat { font-family: var(--font-serif); font-weight: 600; font-size: 1.14rem; margin: 24px 0 2px; }
-  .pub-cat:first-of-type { margin-top: 0; }
+  .pub-list { list-style: none; margin: 0; padding: 0; }
   .pub { display: flex; gap: 20px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--border); }
   .pub:last-child { border-bottom: 0; }
   .pub-thumb {
@@ -257,8 +255,8 @@
       </div>
       <div class="intro-text">
         <h1>Yixuan Wang</h1>
-        <p class="role">PhD Student, <span class="muted">University of Florida · NCR Lab</span></p>
-        <p class="tagline">Unifying machine learning and nonlinear control theory through Lyapunov stability on invariant manifolds.</p>
+        <p class="role">PhD Student, <span class="muted">University of Florida · NCR Lab · Expected PhD May 2027</span></p>
+        <p class="tagline">Understanding and designing learning systems through nonlinear dynamics, Lyapunov theory, and control.</p>
         <div class="links">
           <a href="mailto:wang.yixuan@ufl.edu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email</a>
@@ -279,20 +277,26 @@
     <!-- About -->
     <section id="about">
       <h2>About</h2>
-      <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a> and coadvised by Dr. <a href="https://scholar.google.com/citations?user=ruBLg7wAAAAJ" target="_blank" rel="noopener">Dan P. Guralnik</a>. My research bridges nonlinear control theory and modern machine learning.</p>
-      <p>I'm broadly interested in understanding machine learning systems through the lens of dynamical systems and Lyapunov stability. My work applies control-theoretic tools to problems in modern machine learning, aiming for methods that are both principled and practical.</p>
+      <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Prof. <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a> and coadvised by Dr. <a href="https://scholar.google.com/citations?user=ruBLg7wAAAAJ" target="_blank" rel="noopener">Dan P. Guralnik</a>.</p>
+      <p>My research lies at the intersection of nonlinear control and machine learning. I study learning and generative algorithms as dynamical systems, using tools from nonlinear control, Lyapunov theory, and optimization to understand their stability, convergence, and safety and to derive new algorithms with rigorous guarantees. Across optimization, reinforcement learning, generative modeling, model efficiency, and inference under uncertainty, I am broadly interested in identifying the mathematical structure underlying modern learning systems and using that structure to improve how they are designed and analyzed.</p>
       <p>Before joining UF for my PhD, I earned an M.S. in Computer Science from Johns Hopkins University and an M.S. in Mechanical Engineering from UF. I received my B.S. from Tongji University in Shanghai.</p>
       <p class="beyond"><b>Beyond research.</b> You'll likely find me by the water — a fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
+    </section>
+
+    <!-- Job market -->
+    <section id="job-market">
+      <h2>Job Market</h2>
+      <p class="lead"><b>I will graduate in May 2027 and am seeking research scientist and postdoctoral positions.</b></p>
     </section>
 
     <!-- Research Interests -->
     <section id="interests">
       <h2>Research Interests</h2>
       <div class="chips">
-        <span class="chip">Generative Modeling</span>
-        <span class="chip">JEPA</span>
-        <span class="chip">Lyapunov Stability</span>
         <span class="chip">Nonlinear Control</span>
+        <span class="chip">Learning Dynamics</span>
+        <span class="chip">Generative Modeling</span>
+        <span class="chip">Optimization</span>
         <span class="chip">Reinforcement Learning</span>
       </div>
     </section>
@@ -314,8 +318,6 @@
     <!-- Publications -->
     <section id="publications">
       <h2>Publications</h2>
-
-      <h3 class="pub-cat">Machine Learning</h3>
       <ul class="pub-list">
 
         <li class="pub">
@@ -328,34 +330,6 @@
             <div class="pub-links">
               <a class="pub-link" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Paper</a>
               <a class="pub-link" href="https://github.com/noMushroomw/Effective-model-pruning" target="_blank" rel="noopener">Code</a>
-            </div>
-          </div>
-        </li>
-
-        <li class="pub">
-          <a class="pub-thumb" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener"><img src="images/pubs/energy-matching.png" alt="Langevin samples converging to the 8-Gaussian target distribution in the energy matching experiments" loading="lazy"></a>
-          <div class="pub-body">
-            <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</a></h3>
-            <div class="pub-authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</div>
-            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-            <div class="pub-tldr">Sampling from an energy-based generative model is a control problem: KL as the Lyapunov function gives Langevin sampling a principled finite-step stopping rule — and opens the door to safety, with barrier functions for constrained generation.</div>
-            <div class="pub-links">
-              <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
-              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
-            </div>
-          </div>
-        </li>
-
-        <li class="pub">
-          <a class="pub-thumb" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener"><img src="images/pubs/riemannian-lyapunov.png" alt="3D diagram of the NAIM manifold with fast trajectories converging onto it and slow dynamics evolving along it" loading="lazy"></a>
-          <div class="pub-body">
-            <h3 class="pub-title"><a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</a></h3>
-            <div class="pub-authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</div>
-            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-            <div class="pub-tldr">Optimizers turned into dynamical systems: training evolves on a Riemannian manifold under a Lyapunov certificate — recovering classic algorithms, and offering a blueprint and grammar for designing the optimizers of the future.</div>
-            <div class="pub-links">
-              <a class="pub-link" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Paper</a>
-              <a class="pub-link" href="https://github.com/noMushroomw/NAIM" target="_blank" rel="noopener">Code</a>
             </div>
           </div>
         </li>
@@ -374,10 +348,33 @@
           </div>
         </li>
 
-      </ul>
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener"><img src="images/pubs/riemannian-lyapunov.png" alt="3D diagram of the NAIM manifold with fast trajectories converging onto it and slow dynamics evolving along it" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">Formulates optimization as controlled dynamics on a Riemannian manifold, using Lyapunov analysis to recover classical update rules and systematically construct new optimizers.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw/NAIM" target="_blank" rel="noopener">Code</a>
+            </div>
+          </div>
+        </li>
 
-      <h3 class="pub-cat">Control</h3>
-      <ul class="pub-list">
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener"><img src="images/pubs/energy-matching.png" alt="Langevin samples converging to the 8-Gaussian target distribution in the energy matching experiments" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">Sampling from an energy-based generative model is a control problem: KL as the Lyapunov function gives Langevin sampling a principled finite-step stopping rule — and opens the door to safety, with barrier functions for constrained generation.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+            </div>
+          </div>
+        </li>
 
         <li class="pub">
           <a class="pub-thumb" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener"><img src="images/pubs/rbpf-inference.gif" alt="Animated demo of RBPF intent inference: particle intents converging onto the agent's true goal" loading="lazy"></a>
@@ -400,7 +397,7 @@
             <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a></h3>
             <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</div>
             <div class="pub-meta"><span class="pub-venue">IEEE CDC 2026</span></div>
-            <div class="pub-tldr">Given an adversary trying to infer your goal, probabilistic control barrier functions (PCBFs) guarantee the information leakage never breaches a pre-defined privacy threshold — while still completing the tracking task.</div>
+            <div class="pub-tldr">Given an adversary trying to infer your goal, probabilistic control barrier functions (PCBFs) provide formal bounds on goal information disclosure while preserving the underlying tracking objective.</div>
             <div class="pub-links">
               <a class="pub-link" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Paper</a>
               <a class="pub-link" href="https://github.com/noMushroomw/obfuscation" target="_blank" rel="noopener">Code</a>
@@ -415,7 +412,7 @@
             <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</a></h3>
             <div class="pub-authors">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</div>
             <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
-            <div class="pub-tldr">The first Lyapunov-based adaptive controller built on Kolmogorov-Arnold networks (KANs): real-time learning with asymptotic tracking guarantees, and — unlike MLP-based designs — interpretability, since the learned dynamics decompose into visualizable univariate functions.</div>
+            <div class="pub-tldr">The first Lyapunov-based adaptive controller built on Kolmogorov-Arnold networks (KANs): real-time learning with asymptotic tracking guarantees and an interpretable functional decomposition of the learned dynamics.</div>
             <div class="pub-links">
               <a class="pub-link" href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">Paper</a>
               <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
@@ -424,7 +421,6 @@
         </li>
 
       </ul>
-
     </section>
 
     <!-- Education -->
@@ -458,6 +454,7 @@
           <div class="edu-body">
             <div class="edu-degree">B.S. in Mechanical Engineering</div>
             <div class="edu-place">Tongji University</div>
+            <div class="edu-note">Mechanical Design, Manufacture and Automation</div>
           </div>
         </li>
       </ul>

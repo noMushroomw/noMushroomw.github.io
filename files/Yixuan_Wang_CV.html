@@ -1,13 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
+
   <!--
-  Yixuan Wang — Curriculum Vitae
-  Buttons (top-right):
-    Download PDF  — generates and downloads a PDF directly (no print dialog needed).
-    Download HTML — saves a clean standalone .html copy of this CV.
-    Print         — fallback: opens the browser print dialog (choose "Save as PDF").
+  Yixuan Wang — Curriculum Vitae (academic master version)
   Page size is US Letter (change `size: Letter;` to `size: A4;` in @page to switch).
 -->
 <meta charset="utf-8">
@@ -47,7 +43,7 @@
   }
 
   /* Header */
-  .cv-head { margin-bottom: 26px; }
+  .cv-head { margin-bottom: 24px; }
   .cv-head h1 {
     font-family: var(--font-serif);
     font-weight: 600;
@@ -62,7 +58,7 @@
   .contact .sep { margin: 0 9px; color: var(--faint); }
 
   /* Sections */
-  section { margin-top: 24px; }
+  section { margin-top: 22px; }
   h2 {
     font-family: var(--font-sans);
     font-size: .76rem;
@@ -70,13 +66,15 @@
     text-transform: uppercase;
     letter-spacing: 1.4px;
     color: var(--accent);
-    margin: 0 0 14px;
+    margin: 0 0 12px;
     padding-bottom: 7px;
     border-bottom: 1.5px solid var(--border);
   }
 
-  /* Education entries */
-  .entry { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 15px; }
+  .lede { font-size: .95rem; margin: 0; }
+
+  /* Education / experience entries */
+  .entry { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 13px; }
   .entry:last-child { margin-bottom: 0; }
   .entry-title { font-size: .98rem; }
   .entry-title b { font-weight: 700; }
@@ -85,9 +83,16 @@
   .entry-note { color: var(--muted); font-size: .88rem; margin-top: 2px; }
   .entry-date { flex-shrink: 0; color: var(--faint); font-size: .86rem; white-space: nowrap; font-variant-numeric: tabular-nums; padding-top: 1px; }
 
+  /* Research experience thrust list */
+  ul.rx { margin: 8px 0 0; padding-left: 1.15em; }
+  ul.rx li { margin-bottom: 9px; font-size: .92rem; }
+  ul.rx li:last-child { margin-bottom: 0; }
+  ul.rx li::marker { color: var(--faint); }
+  ul.rx b { font-weight: 700; }
+
   /* Publications */
   ol.pubs { margin: 0; padding-left: 1.5em; }
-  ol.pubs li { margin-bottom: 12px; padding-left: 4px; }
+  ol.pubs li { margin-bottom: 11px; padding-left: 4px; }
   ol.pubs li:last-child { margin-bottom: 0; }
   ol.pubs li::marker { color: var(--faint); font-size: .85em; }
   .pub-t { display: block; font-weight: 600; font-size: .95rem; line-height: 1.4; }
@@ -103,10 +108,15 @@
     padding: 1px 7px; border-radius: 4px; margin-left: 3px; vertical-align: 1px;
   }
 
+  /* Honors / talks simple rows */
+  .row { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 7px; font-size: .93rem; }
+  .row:last-child { margin-bottom: 0; }
+  .row-date { flex-shrink: 0; color: var(--faint); font-size: .86rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
   /* Skills */
   .skill-row { display: flex; gap: 16px; margin-bottom: 8px; font-size: .92rem; }
   .skill-row:last-child { margin-bottom: 0; }
-  .skill-label { flex-shrink: 0; width: 110px; font-weight: 700; }
+  .skill-label { flex-shrink: 0; width: 128px; font-weight: 700; }
   .skill-val { color: var(--text); }
 
   /* Toolbar (screen only) */
@@ -138,28 +148,33 @@
     .contact a, .pub-v a { color: #000; }
     h2 { color: #1b1b1d; }
     .badge { color: #1b1b1d; background: #eee; }
-    .entry, ol.pubs li { break-inside: avoid; }
+    .entry, ol.pubs li, ul.rx li, .row { break-inside: avoid; }
     h2 { break-after: avoid; }
-    section { break-inside: avoid-page; }
   }
 </style>
 
 </head><body id="artifacts-component-root-html">
-  
+
 
   <div class="sheet">
 
     <header class="cv-head">
       <h1>Yixuan Wang</h1>
-      <div class="subtitle">Ph.D. Student · Nonlinear Controls &amp; Robotics · University of Florida</div>
+      <div class="subtitle">Ph.D. Student, Mechanical &amp; Aerospace Engineering · University of Florida · Expected May 2027</div>
       <div class="contact">
         <span>Gainesville, FL</span><span class="sep">·</span>
         <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a><span class="sep">·</span>
         <a href="tel:+13528889238">(352)&nbsp;888-9238</a><span class="sep">·</span>
         <a href="https://nomushroomw.github.io" target="_blank" rel="noopener">nomushroomw.github.io</a><span class="sep">·</span>
-        <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a>
+        <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a><span class="sep">·</span>
+        <a href="https://github.com/noMushroomw" target="_blank" rel="noopener">GitHub</a>
       </div>
     </header>
+
+    <section>
+      <h2>Research Interests</h2>
+      <p class="lede">Nonlinear control, learning dynamics, optimization, generative modeling, reinforcement learning, machine learning theory.</p>
+    </section>
 
     <section>
       <h2>Education</h2>
@@ -167,39 +182,35 @@
       <div class="entry">
         <div class="entry-main">
           <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — Ph.D., Mechanical &amp; Aerospace Engineering</span></div>
-          <div class="entry-sub">Nonlinear Controls and Robotics (NCR) Lab · Advisor: Prof. Warren E. Dixon</div>
-          <div class="entry-note">Research focus: nonlinear control, Lyapunov stability, generative modeling, reinforcement learning</div>
+          <div class="entry-sub">Nonlinear Controls and Robotics (NCR) Lab · Advisor: Prof. Warren E. Dixon · Coadvisor: Dr. Dan P. Guralnik</div>
         </div>
-        <div class="entry-date">05/2024 – Present</div>
+        <div class="entry-date">2024 – Present</div>
       </div>
 
       <div class="entry">
         <div class="entry-main">
           <div class="entry-title"><b>Johns Hopkins University</b><span class="entry-deg"> — M.S., Computer Science</span></div>
-          <div class="entry-sub">Concentration: Machine Learning &amp; Natural Language Processing</div>
         </div>
-        <div class="entry-date">01/2023 – 05/2024</div>
+        <div class="entry-date">2023 – 2024</div>
       </div>
 
       <div class="entry">
         <div class="entry-main">
           <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — M.S., Mechanical Engineering</span></div>
-          <div class="entry-sub">Major: Dynamics &amp; System Control · Minor: ECE · GPA 3.75/4.0</div>
-          <div class="entry-note">Herbert Wertheim College of Engineering Achievement Award Scholarship</div>
         </div>
-        <div class="entry-date">08/2020 – 06/2022</div>
+        <div class="entry-date">2020 – 2022</div>
       </div>
 
       <div class="entry">
         <div class="entry-main">
           <div class="entry-title"><b>Tongji University</b><span class="entry-deg"> — B.S., Mechanical Design, Manufacture and Automation</span></div>
         </div>
-        <div class="entry-date">09/2015 – 06/2020</div>
+        <div class="entry-date">2015 – 2020</div>
       </div>
     </section>
 
     <section>
-      <h2>Publications</h2>
+      <h2>Peer-Reviewed Publications</h2>
       <ol class="pubs">
         <li>
           <span class="pub-t">Effective Model Pruning: Measuring the Redundancy of Model Components</span>
@@ -207,29 +218,14 @@
           <span class="pub-v"><em>ICML 2026</em> <span class="badge">Spotlight</span> · <a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">arXiv:2509.25606</a></span>
         </li>
         <li>
-          <span class="pub-t">Goal Inference with Rao-Blackwellized Particle Filters</span>
-          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</span>
-          <span class="pub-v"><em>IFAC World Congress 2026</em> · <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">arXiv:2512.09269</a></span>
-        </li>
-        <li>
           <span class="pub-t">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</span>
           <span class="pub-a"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren E. Dixon</span>
           <span class="pub-v"><em>IEEE Conference on Decision and Control (CDC) 2026</em> · <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">arXiv:2605.06630</a></span>
         </li>
         <li>
-          <span class="pub-t">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</span>
-          <span class="pub-a"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">arXiv:2605.05530</a></span>
-        </li>
-        <li>
-          <span class="pub-t">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</span>
-          <span class="pub-a"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">arXiv:2601.22284</a></span>
-        </li>
-        <li>
-          <span class="pub-t">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</span>
-          <span class="pub-a">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2025 · <a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">arXiv:2512.21437</a></span>
+          <span class="pub-t">Goal Inference with Rao-Blackwellized Particle Filters</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</span>
+          <span class="pub-v"><em>IFAC World Congress 2026</em> · <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">arXiv:2512.09269</a></span>
         </li>
         <li>
           <span class="pub-t">Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</span>
@@ -240,15 +236,73 @@
     </section>
 
     <section>
-      <h2>Skills</h2>
-      <div class="skill-row"><span class="skill-label">Programming</span><span class="skill-val">Python, MATLAB / Simulink, C/C++</span></div>
-      <div class="skill-row"><span class="skill-label">Research</span><span class="skill-val">Nonlinear control &amp; Lyapunov analysis, generative modeling, reinforcement learning, Bayesian estimation, model compression, robotics</span></div>
+      <h2>Preprints &amp; Manuscripts</h2>
+      <ol class="pubs">
+        <li>
+          <span class="pub-t">Riemannian Lyapunov Optimizer: A Unified Framework for Optimization</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Omkar Sudhir Patil, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2601.22284" target="_blank" rel="noopener">arXiv:2601.22284</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">arXiv:2605.05530</a></span>
+        </li>
+        <li>
+          <span class="pub-t">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</span>
+          <span class="pub-a">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</span>
+          <span class="pub-v"><em>arXiv preprint</em>, 2025 · <a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">arXiv:2512.21437</a></span>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Research Experience</h2>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — Graduate Research Assistant, NCR Lab</span></div>
+          <div class="entry-sub">Advisor: Prof. Warren E. Dixon · Coadvisor: Dr. Dan P. Guralnik</div>
+          <ul class="rx">
+            <li><b>Learning dynamics and optimization.</b> Develop Lyapunov and dynamical-systems formulations of learning algorithms, with applications to optimizer design, reinforcement learning, and stability analysis.</li>
+            <li><b>Generative modeling and control.</b> Study generative dynamics from a control-theoretic perspective, including distributional transport, stability, and constrained generation.</li>
+            <li><b>Model efficiency.</b> Study principled measures of redundancy in neural network components and their use in pruning and compression.</li>
+            <li><b>Inference and autonomous systems.</b> Develop Bayesian intent inference and control policies that jointly regulate physical motion and an observer's belief, with formal bounds on goal information disclosure.</li>
+          </ul>
+        </div>
+        <div class="entry-date">2024 – Present</div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title"><b>Johns Hopkins University</b><span class="entry-deg"> — Graduate Researcher</span></div>
+          <ul class="rx">
+            <li><b>Off-dynamics reinforcement learning.</b> Policy transfer under dynamics shift via domain-adaptation reward modification and imitation learning (NeurIPS 2024).</li>
+          </ul>
+        </div>
+        <div class="entry-date">2023 – 2024</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Honors &amp; Awards</h2>
+      <div class="row"><span>ICML Spotlight — <i>Effective Model Pruning</i></span><span class="row-date">2026</span></div>
+      <div class="row"><span>Herbert Wertheim College of Engineering Achievement Award Scholarship, University of Florida</span><span class="row-date">2020</span></div>
+    </section>
+
+    <section>
+      <h2>Technical Skills</h2>
+      <div class="skill-row"><span class="skill-label">Machine Learning</span><span class="skill-val">PyTorch; generative models (energy-based, diffusion, flow matching); reinforcement learning; model compression</span></div>
+      <div class="skill-row"><span class="skill-label">ML Systems</span><span class="skill-val">Multi-GPU distributed training (DDP), Slurm-based HPC workflows</span></div>
+      <div class="skill-row"><span class="skill-label">Theory</span><span class="skill-val">Nonlinear &amp; adaptive control, Lyapunov analysis, dynamical systems, optimization on manifolds, Bayesian estimation &amp; particle filtering</span></div>
+      <div class="skill-row"><span class="skill-label">Programming</span><span class="skill-val">Python, C/C++, MATLAB / Simulink, Git, LaTeX</span></div>
       <div class="skill-row"><span class="skill-label">Languages</span><span class="skill-val">English (proficient), Mandarin (native), German (B2)</span></div>
     </section>
 
+
   </div>
 
-  
-  
+
+
 </body>
 </html>
