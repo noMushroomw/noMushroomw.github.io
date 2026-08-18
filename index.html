@@ -310,6 +310,7 @@
       <h2>News</h2>
       <ul class="news-list">
         <!-- Newest first. Copy a line to add an entry. -->
+        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization.”</em></div></li>
         <li><div class="news-date">2026</div><div class="news-body"><em>“Quantifying Trade-Offs Between Stability and Goal-Obfuscation”</em> accepted to <strong>IEEE CDC 2026</strong>.</div></li>
         <li><div class="news-date">2026</div><div class="news-body"><em>“Effective Model Pruning”</em> accepted to <strong>ICML 2026</strong> as a Spotlight.</div></li>
         <li><div class="news-date">2026</div><div class="news-body"><em>“Goal Inference with Rao-Blackwellized Particle Filters”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
@@ -375,6 +376,20 @@
             <div class="pub-tldr">Sampling from an energy-based generative model is a control problem: KL as the Lyapunov function gives Langevin sampling a principled finite-step stopping rule — and opens the door to safety, with barrier functions for constrained generation.</div>
             <div class="pub-links">
               <a class="pub-link" href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">Paper</a>
+              <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
+            </div>
+          </div>
+        </li>
+
+        <li class="pub">
+          <a class="pub-thumb" href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener"><img src="images/pubs/sa-mrpo.png" alt="Advantage assignment across four rollouts: unlike GRPO and GDPO, SA-MRPO penalizes rollouts that only satisfy the saturated format objective" loading="lazy"></a>
+          <div class="pub-body">
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization</a></h3>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Yifei Chen, Haichao Zhang, Haozheng Luo, Xander Wu, Jie Ni, Yun Fu, Nuno Vasconcelos, Yijiang Li</div>
+            <div class="pub-meta"><span class="pub-venue preprint">arXiv Preprint</span></div>
+            <div class="pub-tldr">Multi-reward RL for LLM reasoning keeps spending gradient on objectives the policy has already mastered: SA-MRPO standardizes each reward separately and reweights advantages by batch-level saturation, redirecting optimization toward what is left to learn — with gains on math, adaptive reasoning, and coding benchmarks.</div>
+            <div class="pub-links">
+              <a class="pub-link" href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">Paper</a>
               <a class="pub-link" href="https://github.com/noMushroomw" target="_blank" rel="noopener">Code</a>
             </div>
           </div>
