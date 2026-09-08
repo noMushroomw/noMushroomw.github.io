@@ -137,18 +137,30 @@
   body.capturing .toolbar { display: none; }
 
   /* Print / PDF */
-  @page { size: Letter; margin: 0.7in; }
+  @page { size: Letter; margin: 0.55in; }
   @media print {
     body { background: #fff; }
     .sheet {
       max-width: none; width: auto; margin: 0; padding: 0;
-      box-shadow: none; font-size: 10.5pt; line-height: 1.42;
+      box-shadow: none; font-size: 10pt; line-height: 1.3;
     }
+    .cv-head { margin-bottom: 16px; }
+    .cv-head h1 { font-size: 24pt; }
+    .subtitle, .contact { font-size: 9.5pt; }
+    section { margin-top: 14px; }
+    h2 { margin-bottom: 8px; padding-bottom: 5px; }
+    .lede, .entry-title, .pub-t { font-size: 10.5pt; }
+    .entry-sub, .entry-note, .pub-a, .pub-v, ul.rx li, .row, .skill-row { font-size: 10pt; }
+    .entry-date, .row-date { font-size: 9.5pt; color: var(--muted); }
+    .entry { margin-bottom: 7px; }
+    ol.pubs li { margin-bottom: 6px; }
+    ul.rx li { margin-bottom: 6px; }
+    .skill-row { margin-bottom: 5px; }
     .toolbar, .no-print { display: none !important; }
     .contact a, .pub-v a { color: #000; }
     h2 { color: #1b1b1d; }
     .badge { color: #1b1b1d; background: #eee; }
-    .entry, ol.pubs li, ul.rx li, .row { break-inside: avoid; }
+    .entry, ol.pubs li, ul.rx li, .row, .skill-row, .compact-section { break-inside: avoid; }
     h2 { break-after: avoid; }
   }
 </style>
@@ -173,7 +185,7 @@
 
     <section>
       <h2>Research Interests</h2>
-      <p class="lede">Nonlinear control, learning dynamical systems, optimization, generative modeling, reinforcement learning, machine learning theory.</p>
+      <p class="lede">Generative modeling; machine learning theory; safety in machine learning; nonlinear control and Lyapunov analysis; reinforcement learning.</p>
     </section>
 
     <section>
@@ -269,8 +281,8 @@
           <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — Graduate Research Assistant, NCR Lab</span></div>
           <div class="entry-sub">Advisor: Prof. Warren E. Dixon · Coadvisor: Dr. Dan P. Guralnik</div>
           <ul class="rx">
-            <li><b>Learning dynamical systems and optimization.</b> Develop Lyapunov and dynamical-systems formulations of learning algorithms, with applications to optimizer design, reinforcement learning, and stability analysis.</li>
-            <li><b>Generative modeling and control.</b> Study generative models as dynamical systems from a control-theoretic perspective, including distributional transport, stability, and constrained generation.</li>
+            <li><b>Learning dynamics, geometry, and optimization.</b> Investigate the dynamics and manifold structure of learning algorithms using nonlinear control and Lyapunov analysis, with applications to optimizer design, reinforcement learning, and stability analysis.</li>
+            <li><b>Generative modeling and control.</b> Study generative models and large language models from a control and dynamical systems perspective, including distributional transport, stability, and constrained generation.</li>
             <li><b>Model efficiency.</b> Study principled measures of redundancy in neural network components and their use in pruning and compression.</li>
             <li><b>Inference and autonomous systems.</b> Develop Bayesian intent inference and control policies that jointly regulate physical motion and an observer's belief, with formal bounds on goal information disclosure.</li>
           </ul>
@@ -289,7 +301,21 @@
       </div>
     </section>
 
-    <section>
+    <section class="compact-section">
+      <h2>Research Proposal Development</h2>
+      <p class="lede">Contributed to advisor-led proposals funded by the National Science Foundation (NSF), Air Force Office of Scientific Research (AFOSR), and Air Force Research Laboratory (AFRL).</p>
+      <ul class="rx">
+        <li><b>Research aim development.</b> Led the development and writing of 1-2 research aims per proposal, from research questions and technical innovations to technical approaches and research plans.</li>
+        <li><b>Preliminary research and proposal authorship.</b> Conducted preliminary experiments and authored the corresponding proposal sections to establish the proposed aims' motivation and feasibility.</li>
+      </ul>
+    </section>
+
+    <section class="compact-section">
+      <h2>Professional Service</h2>
+      <div class="row"><span><b>Conference Reviewer:</b> ICLR, ICML, NeurIPS</span><span class="row-date">2025 - Present</span></div>
+    </section>
+
+    <section class="compact-section">
       <h2>Honors &amp; Awards</h2>
       <div class="row"><span>ICML Spotlight — <i>Effective Model Pruning</i></span><span class="row-date">2026</span></div>
       <div class="row"><span>Herbert Wertheim College of Engineering Achievement Award Scholarship, University of Florida</span><span class="row-date">2020</span></div>
