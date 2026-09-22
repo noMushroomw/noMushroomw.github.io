@@ -157,7 +157,7 @@
   /* News */
   .news-list { list-style: none; margin: 0; padding: 0; }
   .news-list li { display: flex; gap: 18px; padding: 9px 0; align-items: baseline; }
-  .news-date { flex-shrink: 0; width: 56px; color: var(--text-faint); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .news-date { flex-shrink: 0; width: 80px; color: var(--text-faint); font-size: .85rem; font-variant-numeric: tabular-nums; }
   .news-body { color: var(--text); }
   .news-body em { color: var(--text-muted); font-style: italic; }
   .news-body strong { font-weight: 600; }
@@ -210,7 +210,9 @@
 
   /* Responsive */
   @media (max-width: 640px) {
+    .nav { gap: 16px; }
     .nav a { display: none; }
+    .nav a.nav-keep { display: inline-block; }
     .intro { flex-direction: column; text-align: center; gap: 20px; padding-top: 40px; }
     .links { justify-content: center; }
     .intro-text h1 { font-size: 1.85rem; }
@@ -228,8 +230,9 @@
       <nav class="nav">
         <a href="#about">About</a>
         <a href="#news">News</a>
-        <a href="#publications">Publications</a>
+        <a class="nav-keep" href="#publications">Publications</a>
         <a href="#education">Education</a>
+        <a class="nav-keep" href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">CV</a>
         <a href="snake.html">Fun Stuffs</a>
         <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -309,14 +312,11 @@
     <section id="news">
       <h2>News</h2>
       <ul class="news-list">
-        <!-- Newest first. Copy a line to add an entry. -->
-        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization.”</em></div></li>
-        <li><div class="news-date">2026</div><div class="news-body"><em>“Quantifying Trade-Offs Between Stability and Goal-Obfuscation”</em> accepted to <strong>IEEE CDC 2026</strong>.</div></li>
-        <li><div class="news-date">2026</div><div class="news-body"><em>“Effective Model Pruning”</em> accepted to <strong>ICML 2026</strong> as a Spotlight.</div></li>
-        <li><div class="news-date">2026</div><div class="news-body"><em>“Goal Inference with Rao-Blackwellized Particle Filters”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
-        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Riemannian Lyapunov Optimizer: A Unified Framework for Optimization.”</em></div></li>
-        <li><div class="news-date">2026</div><div class="news-body">New preprint: <em>“Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective.”</em></div></li>
-        <li><div class="news-date">2024</div><div class="news-body"><em>“Off-Dynamics Reinforcement Learning”</em> accepted to <strong>NeurIPS 2024</strong>.</div></li>
+        <!-- Newest first, recent items only. Copy a line to add an entry. -->
+        <li><div class="news-date">Aug 2026</div><div class="news-body">New preprint: <em>“<a href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization</a>.”</em></div></li>
+        <li><div class="news-date">Aug 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a>”</em> accepted to <strong>IEEE CDC 2026</strong>.</div></li>
+        <li><div class="news-date">May 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning</a>”</em> accepted to <strong>ICML 2026</strong> as a Spotlight.</div></li>
+        <li><div class="news-date">Mar 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a>”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
       </ul>
     </section>
 
