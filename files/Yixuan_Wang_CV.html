@@ -64,7 +64,7 @@
     font-size: .76rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
+    letter-spacing: 0;
     color: var(--accent);
     margin: 0 0 12px;
     padding-bottom: 7px;
@@ -74,8 +74,13 @@
   .lede { font-size: .95rem; margin: 0; }
 
   /* Education / experience entries */
-  .entry { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 13px; }
+  /* grid so the date sits beside the first line only and sub-lines/bullets span the full width */
+  .entry { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; margin-bottom: 13px; }
   .entry:last-child { margin-bottom: 0; }
+  .entry-main { display: contents; }
+  .entry-title { grid-column: 1; grid-row: 1; }
+  .entry-date { grid-column: 2; grid-row: 1; }
+  .entry-sub, .entry-note, .entry ul.rx { grid-column: 1 / -1; }
   .entry-title { font-size: .98rem; }
   .entry-title b { font-weight: 700; }
   .entry-deg { color: var(--text); }
@@ -102,11 +107,7 @@
   .pub-v em { font-style: italic; color: var(--text); }
   .pub-v a { color: var(--accent); text-decoration: none; }
   .pub-v a:hover { text-decoration: underline; }
-  .badge {
-    display: inline-block; font-size: .72rem; font-weight: 600;
-    color: var(--accent); background: var(--chip-bg);
-    padding: 1px 7px; border-radius: 4px; margin-left: 3px; vertical-align: 1px;
-  }
+  .badge { font-weight: 600; color: var(--text); margin-left: 4px; }
 
   /* Honors / talks simple rows */
   .row { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 7px; font-size: .93rem; }
@@ -130,6 +131,11 @@
   .tb-btn:hover { filter: brightness(1.06); }
   .tb-ghost { background: #fff; color: var(--accent); }
   .tb-ghost:hover { background: var(--chip-bg); filter: none; }
+  a.tb-btn { text-decoration: none; }
+  @media (max-width: 960px) {
+    .toolbar { position: static; flex-direction: row; justify-content: flex-end; margin: 14px 16px 0; }
+  }
+  .updated { margin: 26px 0 0; color: var(--faint); font-size: .8rem; text-align: right; }
 
   /* While generating the PDF, present a clean letter-width sheet */
   body.capturing { background: #fff; }
@@ -142,31 +148,48 @@
     body { background: #fff; }
     .sheet {
       max-width: none; width: auto; margin: 0; padding: 0;
-      box-shadow: none; font-size: 10pt; line-height: 1.3;
+      box-shadow: none; font-size: 10pt; line-height: 1.25;
     }
-    .cv-head { margin-bottom: 16px; }
-    .cv-head h1 { font-size: 24pt; }
-    .subtitle, .contact { font-size: 9.5pt; }
-    section { margin-top: 14px; }
-    h2 { margin-bottom: 8px; padding-bottom: 5px; }
-    .lede, .entry-title, .pub-t { font-size: 10.5pt; }
-    .entry-sub, .entry-note, .pub-a, .pub-v, ul.rx li, .row, .skill-row { font-size: 10pt; }
-    .entry-date, .row-date { font-size: 9.5pt; color: var(--muted); }
-    .entry { margin-bottom: 7px; }
-    ol.pubs li { margin-bottom: 6px; }
-    ul.rx li { margin-bottom: 6px; }
-    .skill-row { margin-bottom: 5px; }
+    .cv-head { margin-bottom: 0; }
+    .cv-head h1 { font-size: 24pt; line-height: 1.1; margin: 0 0 2pt; }
+    .subtitle { font-size: 10pt; margin-bottom: 1pt; }
+    .contact { font-size: 9.5pt; }
+    /* space between sections clearly larger than space inside a section */
+    section { margin-top: 10pt; }
+    h2 {
+      font-size: 10.5pt; color: #1b1b1d;
+      margin: 0 0 5.5pt; padding-bottom: 3pt;
+      border-bottom: .75pt solid #cfd2d8;
+    }
+    /* one body size; titles differ by weight, not size */
+    .lede, .entry-title, .pub-t, .entry-sub, .entry-note, .pub-a, .pub-v, ul.rx li, .row, .skill-row { font-size: 10pt; }
+    .entry-title b, .pub-t, ul.rx b, .skill-label, .row b { font-weight: 600; }
+    .pub-a strong { font-weight: 700; }
+    /* dates, numbers, arXiv ids: one dark gray */
+    .entry-date, .row-date { font-size: 10pt; color: var(--muted); }
+    ol.pubs li::marker, ul.rx li::marker { color: var(--muted); }
+    .pub-v, .pub-v a { color: var(--muted); }
+    .pub-v em { color: #1b1b1d; }
+    .entry { margin-bottom: 3pt; }
+    ol.pubs li { margin-bottom: 3pt; }
+    ul.rx li { margin-bottom: 3.5pt; }
+    .skill-row { margin-bottom: 2pt; }
+    /* research-experience thrusts: title on its own line */
+    .entry ul.rx li > b:first-child { display: block; }
+    .contact a { color: #000; }
     .toolbar, .no-print { display: none !important; }
-    .contact a, .pub-v a { color: #000; }
-    h2 { color: #1b1b1d; }
-    .badge { color: #1b1b1d; background: #eee; }
     .entry, ol.pubs li, ul.rx li, .row, .skill-row, .compact-section { break-inside: avoid; }
     h2 { break-after: avoid; }
+    .keep-together { break-inside: avoid; }
   }
 </style>
 
 </head><body id="artifacts-component-root-html">
 
+  <div class="toolbar no-print">
+    <a class="tb-btn" href="Yixuan_Wang_CV.pdf" download>Download PDF</a>
+    <a class="tb-btn tb-ghost" href="../index.html">Homepage</a>
+  </div>
 
   <div class="sheet">
 
@@ -176,7 +199,6 @@
       <div class="contact">
         <span>Gainesville, FL</span><span class="sep">·</span>
         <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a><span class="sep">·</span>
-        <a href="tel:+13528889238">(352)&nbsp;888-9238</a><span class="sep">·</span>
         <a href="https://nomushroomw.github.io" target="_blank" rel="noopener">nomushroomw.github.io</a><span class="sep">·</span>
         <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a><span class="sep">·</span>
         <a href="https://github.com/noMushroomw" target="_blank" rel="noopener">GitHub</a>
@@ -185,7 +207,7 @@
 
     <section>
       <h2>Research Interests</h2>
-      <p class="lede">Generative modeling; machine learning theory; safety in machine learning; nonlinear control and Lyapunov analysis; reinforcement learning.</p>
+      <p class="lede">I study machine learning systems, especially generative models, through the lens of nonlinear control and dynamical systems. Using Lyapunov analysis, geometry, and optimization, I analyze their behavior and underlying manifold structure, and turn this understanding into new algorithms and model structures with guarantees on stability, convergence, and safety.</p>
     </section>
 
     <section>
@@ -202,6 +224,7 @@
       <div class="entry">
         <div class="entry-main">
           <div class="entry-title"><b>Johns Hopkins University</b><span class="entry-deg"> — M.S., Computer Science</span></div>
+          <div class="entry-sub">Research on off-dynamics reinforcement learning with Prof. Anqi Liu's group, leading to a NeurIPS 2024 paper</div>
         </div>
         <div class="entry-date">2023 – 2024</div>
       </div>
@@ -222,11 +245,11 @@
     </section>
 
     <section>
-      <h2>Peer-Reviewed Publications</h2>
+      <h2>Selected Peer-Reviewed Publications</h2>
       <ol class="pubs">
         <li>
           <span class="pub-t">Effective Model Pruning: Measuring the Redundancy of Model Components</span>
-          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren E. Dixon</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Saiedeh Akbari, Warren E. Dixon</span>
           <span class="pub-v"><em>ICML 2026</em> <span class="badge">Spotlight</span> · <a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">arXiv:2509.25606</a></span>
         </li>
         <li>
@@ -236,11 +259,11 @@
         </li>
         <li>
           <span class="pub-t">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</span>
-          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren E. Dixon</span>
+          <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</span>
           <span class="pub-v"><em>IEEE Conference on Decision and Control (CDC) 2026</em> · <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">arXiv:2605.06630</a></span>
         </li>
         <li>
-          <span class="pub-t">Goal Inference with Rao-Blackwellized Particle Filters</span>
+          <span class="pub-t">Rao-Blackwellized particle filter for agent's intention inference</span>
           <span class="pub-a"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</span>
           <span class="pub-v"><em>IFAC World Congress 2026</em> · <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">arXiv:2512.09269</a></span>
         </li>
@@ -252,28 +275,28 @@
       </ol>
     </section>
 
-    <section>
+    <section class="keep-together">
       <h2>Preprints &amp; Manuscripts</h2>
       <ol class="pubs">
         <li>
           <span class="pub-t">Skeletons in Flow: Graph Structured Flow Matching for Human Motion Prediction</span>
           <span class="pub-a"><strong>Yixuan Wang</strong>, Brandon C. Fallin, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2609.32231" target="_blank" rel="noopener">arXiv:2609.32231</a></span>
+          <span class="pub-v"><a href="https://arxiv.org/abs/2609.32231" target="_blank" rel="noopener">arXiv:2609.32231</a></span>
         </li>
         <li>
           <span class="pub-t">Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization</span>
           <span class="pub-a"><strong>Yixuan Wang</strong>, Yifei Chen, Haichao Zhang, Haozheng Luo, Xander Wu, Jie Ni, Yun Fu, Nuno Vasconcelos, Yijiang Li</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">arXiv:2608.16072</a></span>
+          <span class="pub-v"><a href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">arXiv:2608.16072</a></span>
         </li>
         <li>
           <span class="pub-t">Energy Generative Modeling: A Lyapunov-based Energy Matching Perspective</span>
           <span class="pub-a"><strong>Yixuan Wang</strong>, Wenqian Xue, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2026 · <a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">arXiv:2605.05530</a></span>
+          <span class="pub-v"><a href="https://arxiv.org/abs/2605.05530" target="_blank" rel="noopener">arXiv:2605.05530</a></span>
         </li>
         <li>
           <span class="pub-t">Lyapunov-Based Kolmogorov-Arnold Network (KAN) Adaptive Control</span>
           <span class="pub-a">Xuehui Shen, Wenqian Xue, <strong>Yixuan Wang</strong>, Warren E. Dixon</span>
-          <span class="pub-v"><em>arXiv preprint</em>, 2025 · <a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">arXiv:2512.21437</a></span>
+          <span class="pub-v"><a href="https://arxiv.org/abs/2512.21437" target="_blank" rel="noopener">arXiv:2512.21437</a></span>
         </li>
       </ol>
     </section>
@@ -285,24 +308,15 @@
         <div class="entry-main">
           <div class="entry-title"><b>University of Florida</b><span class="entry-deg"> — Graduate Research Assistant, NCR Lab</span></div>
           <div class="entry-sub">Advisor: Prof. Warren E. Dixon · Coadvisor: Prof. Dan P. Guralnik</div>
+          <div class="entry-note">Common thread: view learning, generation, and inference algorithms as dynamical systems, and use tools from nonlinear control, Lyapunov theory, and Bayesian estimation to understand and redesign them.</div>
           <ul class="rx">
-            <li><b>Learning dynamics, geometry, and optimization.</b> Investigate the dynamics and manifold structure of learning algorithms using nonlinear control and Lyapunov analysis, with applications to optimizer design, reinforcement learning, and stability analysis.</li>
-            <li><b>Generative modeling and control.</b> Study generative models and large language models from a control and dynamical systems perspective, including distributional transport, stability, and constrained generation.</li>
-            <li><b>Model efficiency.</b> Study principled measures of redundancy in neural network components and their use in pruning and compression.</li>
-            <li><b>Inference and autonomous systems.</b> Develop Bayesian intent inference and control policies that jointly regulate physical motion and an observer's belief, with formal bounds on goal information disclosure.</li>
+            <li><b>Optimization as feedback control.</b> Formulated optimization as a closed-loop controlled dynamical system on a Riemannian manifold coupling model parameters with internal optimizer states; a Lyapunov construction links objective reduction to regulation of the optimizer's internal dynamics, giving a common description of SGD, Adam, and Lion and a blueprint for designing optimizers around explicit stability objectives (NeurIPS 2026).</li>
+            <li><b>Generation as controlled transport.</b> Developed graph structured flow matching that transports the entire future skeleton trajectory through one conditional velocity field while preserving bone lengths by construction; a compact 4.47M-parameter model reaches near-best AMASS precision and transfers zero-shot to the unseen Human3.6M skeleton (preprint). Cast energy-based sampling as a control problem with a Kullback–Leibler Lyapunov function, yielding a finite-step stopping rule for Langevin sampling (preprint).</li>
+            <li><b>Belief dynamics in inference and privacy.</b> Built a Rao-Blackwellized particle filter that infers an agent's goal online from noisy trajectories, and control policies that regulate the observer's belief to bound goal-information disclosure via probabilistic control barrier functions (IFAC 2026; IEEE CDC 2026).</li>
+            <li><b>Allocating model capacity and optimization effort.</b> Given any importance-score vector, set an adaptive sparsity level via its effective sample size, with a provable loss-change bound; the method works with any importance criterion and architecture, validated on MLPs, CNNs, Transformers, LLaMA (7B–70B), and KANs, and even beyond networks on image pixels (ICML 2026 Spotlight). Reweighted each reward's advantage by batch-level saturation so multi-objective policy optimization stops spending effort on saturated objectives: +3.8 pts average over GDPO on five math benchmarks (preprint).</li>
           </ul>
         </div>
         <div class="entry-date">2024 – Present</div>
-      </div>
-
-      <div class="entry">
-        <div class="entry-main">
-          <div class="entry-title"><b>Johns Hopkins University</b><span class="entry-deg"> — Graduate Researcher</span></div>
-          <ul class="rx">
-            <li><b>Off-dynamics reinforcement learning.</b> Policy transfer under dynamics shift via domain-adaptation reward modification and imitation learning (NeurIPS 2024).</li>
-          </ul>
-        </div>
-        <div class="entry-date">2023 – 2024</div>
       </div>
     </section>
 
@@ -317,23 +331,20 @@
 
     <section class="compact-section">
       <h2>Professional Service</h2>
-      <div class="row"><span><b>Conference Reviewer:</b> ICLR, ICML, NeurIPS</span><span class="row-date">2025 - Present</span></div>
+      <div class="row"><span><b>Reviewer:</b> NeurIPS 2025–2026; ICML 2026; ICLR 2026</span></div>
     </section>
 
-    <section class="compact-section">
-      <h2>Honors &amp; Awards</h2>
-      <div class="row"><span>ICML Spotlight — <i>Effective Model Pruning</i></span><span class="row-date">2026</span></div>
-      <div class="row"><span>Herbert Wertheim College of Engineering Achievement Award Scholarship, University of Florida</span><span class="row-date">2020</span></div>
-    </section>
 
     <section>
       <h2>Technical Skills</h2>
       <div class="skill-row"><span class="skill-label">Machine Learning</span><span class="skill-val">PyTorch; generative models (energy-based, diffusion, flow matching); reinforcement learning; model compression</span></div>
-      <div class="skill-row"><span class="skill-label">ML Systems</span><span class="skill-val">Multi-GPU distributed training (DDP), Slurm-based HPC workflows</span></div>
+      <div class="skill-row"><span class="skill-label">ML Systems</span><span class="skill-val">Multi-GPU distributed training (DDP) on NVIDIA B200 GPUs; Slurm-based HPC workflows (UF&nbsp;HiPerGator)</span></div>
       <div class="skill-row"><span class="skill-label">Theory</span><span class="skill-val">Nonlinear &amp; adaptive control, Lyapunov analysis, dynamical systems, optimization on manifolds, Bayesian estimation &amp; particle filtering</span></div>
       <div class="skill-row"><span class="skill-label">Programming</span><span class="skill-val">Python, C/C++, MATLAB / Simulink, Git, LaTeX</span></div>
       <div class="skill-row"><span class="skill-label">Languages</span><span class="skill-val">English (proficient), Mandarin (native), German (B2)</span></div>
     </section>
+
+    <p class="updated no-print">Last updated: September 2026</p>
 
 
   </div>

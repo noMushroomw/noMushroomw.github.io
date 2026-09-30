@@ -63,7 +63,7 @@
     font-size: .74rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
+    letter-spacing: 0;
     color: var(--accent);
     margin: 0 0 10px;
     padding-bottom: 6px;
@@ -82,17 +82,19 @@
   .skill-row:last-child { margin-bottom: 0; }
   .skill-label { flex-shrink: 0; width: 132px; font-weight: 700; }
 
-  ol.pubs { margin: 0; padding-left: 1.4em; }
-  ol.pubs li { margin-bottom: 7px; padding-left: 3px; font-size: .9rem; }
-  ol.pubs li:last-child { margin-bottom: 0; }
-  ol.pubs li::marker { color: var(--faint); font-size: .85em; }
-  .pub-v { color: var(--muted); }
-  .pub-v em { font-style: italic; color: var(--text); }
-  .badge {
-    display: inline-block; font-size: .7rem; font-weight: 600;
-    color: var(--accent); background: var(--chip-bg);
-    padding: 1px 6px; border-radius: 4px; margin-left: 3px; vertical-align: 1px;
+  /* number | title | venue: one grid shared by the whole list, so every title
+     wraps inside the same column and every venue is right-aligned in the same column */
+  ol.pubs {
+    display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content;
+    column-gap: 10px; row-gap: 7px;
+    margin: 0; padding: 0; list-style: none; counter-reset: pub; font-size: .9rem;
   }
+  ol.pubs li, .pub-row { display: contents; }
+  .pub-row::before { counter-increment: pub; content: counter(pub) "."; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pub-v { text-align: right; white-space: nowrap; color: var(--muted); }
+  .pub-v em { font-style: italic; color: var(--text); }
+  .updated { margin: 18px 0 0; color: var(--faint); font-size: .78rem; text-align: right; }
+  .badge { font-weight: 600; color: var(--text); margin-left: 4px; }
 
   .entry { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 6px; font-size: .92rem; }
   .entry:last-child { margin-bottom: 0; }
@@ -105,19 +107,31 @@
     body { background: #fff; }
     .sheet {
       max-width: none; width: auto; margin: 0; padding: 0;
-      box-shadow: none; font-size: 9.5pt; line-height: 1.32;
+      box-shadow: none; font-size: 10pt; line-height: 1.27;
     }
-    section { margin-top: 8px; }
-    h2 { margin-bottom: 5px; padding-bottom: 3px; }
-    .cv-head { margin-bottom: 9px; }
-    .lede, ul.rx li, .skill-row, ol.pubs li, .entry, .service { font-size: 10.5pt; }
+    /* compact header; the saved space goes to section boundaries */
+    .cv-head { margin-bottom: 0; }
+    .cv-head h1 { font-size: 24pt; line-height: 1.1; margin: 0 0 1pt; }
+    .subtitle { font-size: 10pt; margin-bottom: 1pt; }
+    .contact { font-size: 9.5pt; }
+    /* space between sections clearly larger than space inside a section */
+    section { margin-top: 8pt; }
+    h2 {
+      font-size: 10pt; color: #1b1b1d;
+      margin: 0 0 5pt; padding-bottom: 3pt;
+      border-bottom: .75pt solid #cfd2d8;
+    }
+    .lede, ul.rx li, .skill-row, ol.pubs li, .entry, .service { font-size: 10pt; }
+    ul.rx { padding-left: 1.1em; }
+    ul.rx li { margin-bottom: 3pt; }
+    ul.rx li::marker { color: var(--muted); }
+    ul.rx b, .skill-label, .service b, .entry b { font-weight: 600; }
+    .skill-row { margin-bottom: 1.5pt; }
+    ol.pubs { font-size: 10pt; column-gap: 7pt; row-gap: 2.5pt; }
+    .entry { margin-bottom: 1.5pt; }
     .entry-date { color: var(--muted); }
-    ul.rx li { margin-bottom: 3px; }
-    ol.pubs li { margin-bottom: 3px; }
-    .entry { margin-bottom: 3px; }
     .contact a { color: #000; }
-    h2 { color: #1b1b1d; }
-    .badge { color: #1b1b1d; background: #eee; }
+    .no-print { display: none !important; }
     ul.rx li, ol.pubs li, .entry, .skill-row, .compact-section { break-inside: avoid; }
     h2 { break-after: avoid; }
   }
@@ -141,50 +155,51 @@
 
     <section>
       <h2>Research Profile</h2>
-      <p class="lede">Machine learning researcher using nonlinear control, dynamical systems, and geometry to understand generative models and LLMs, improve model structure, and develop new algorithms. First-author papers at ICML (Spotlight), NeurIPS, IEEE CDC, and IFAC World Congress. Seeking research scientist roles starting summer 2027.</p>
+      <p class="lede">Machine learning researcher who views learning and generative algorithms as dynamical systems, using nonlinear control and Lyapunov analysis to understand them and to improve their algorithms and structure with guarantees on stability, convergence, and safety. First-author papers at ICML (Spotlight), NeurIPS, IEEE CDC, and IFAC World Congress. Seeking research scientist roles starting summer 2027.</p>
     </section>
 
     <section>
       <h2>Selected Research Contributions</h2>
       <ul class="rx">
-        <li><b>Effective Model Pruning (ICML 2026 Spotlight).</b> Derived adaptive sparsity levels from component importance scores via effective sample size, with a provable loss-change bound; implemented and validated across MLPs, CNNs, Transformers/LLMs, and KANs.</li>
-        <li><b>Riemannian Lyapunov framework (NeurIPS 2026).</b> Formulated optimization as closed-loop control on Riemannian manifolds, recovering classical optimizers and deriving new update laws; implemented and benchmarked on ImageNet-scale ResNet and ViT classification.</li>
-        <li><b>Generative modeling as distributional control.</b> Developed a Lyapunov perspective on energy-based generative models in which sampling is a control problem, yielding a principled finite-step stopping rule for Langevin sampling.</li>
-        <li><b>Bayesian intent inference and privacy.</b> Built a Rao-Blackwellized particle filter for online goal inference from trajectories, and control policies that jointly regulate physical motion and an observer's belief, with formal bounds on goal information disclosure (IFAC 2026, IEEE CDC 2026).</li>
-        <li><b>Research proposal development.</b> Led the development and writing of 1-2 research aims per proposal, including technical approaches, preliminary experiments, and research plans, for advisor-led proposals funded by NSF, AFOSR, and AFRL.</li>
+        <li><b>Effective Model Pruning (ICML 2026 Spotlight).</b> Given any importance-score vector, sets an adaptive sparsity level via its effective sample size, with a provable loss-change bound. Works with any importance criterion and any architecture: validated on MLPs, CNNs, Transformers, LLaMA (7B–70B), and KANs, and even beyond networks on image pixels, so it applies wherever one must decide how many elements to keep.</li>
+        <li><b>Riemannian Lyapunov framework (NeurIPS 2026).</b> Formulated optimization as a closed-loop controlled dynamical system on a Riemannian manifold coupling model parameters with optimizer states; a Lyapunov construction links objective reduction to regulation of internal optimizer dynamics, giving a common description of SGD, Adam, and Lion and a blueprint for designing optimizers around explicit stability objectives.</li>
+        <li><b>Saturation-aware multi-reward RL (SA-MRPO, arXiv:2608.16072).</b> Saturated objectives keep absorbing optimization effort despite having no headroom; SA-MRPO reweights each reward's advantage by batch-level saturation to redirect effort to unmastered objectives: +3.8 pts average over GDPO on five math benchmarks (up to +9.2 on AMC23).</li>
+        <li><b>Graph structured flow matching (GSFM, arXiv:2609.32231).</b> To predict diverse human motion that respects the body's articulated structure, transports the whole future skeleton trajectory through one conditional velocity field, preserving bone lengths by construction. A compact 4.47M-parameter model reaches near-best AMASS precision and transfers zero-shot to the unseen Human3.6M skeleton, beating every retargeting baseline.</li>
+        <li><b>Bayesian intent inference and privacy (IFAC 2026, IEEE CDC 2026).</b> Built a Rao-Blackwellized particle filter that infers an agent's goal online from noisy trajectories, and control policies that regulate the observer's belief to bound goal-information disclosure via probabilistic control barrier functions.</li>
       </ul>
     </section>
 
     <section>
       <h2>Technical Skills</h2>
-      <div class="skill-row"><span class="skill-label">Machine Learning</span><span>PyTorch; generative models (energy-based, diffusion, flow matching); reinforcement learning; model compression</span></div>
-      <div class="skill-row"><span class="skill-label">ML Systems</span><span>Multi-GPU distributed training (DDP); Slurm-based HPC workflows (UF HiPerGator)</span></div>
+      <div class="skill-row"><span class="skill-label">Machine Learning</span><span>PyTorch; generative modeling (EBMs, diffusion, flow matching); RL; model compression</span></div>
+      <div class="skill-row"><span class="skill-label">ML Systems</span><span>Multi-GPU DDP training on NVIDIA B200 GPUs; Slurm-based HPC (UF&nbsp;HiPerGator)</span></div>
+      <div class="skill-row"><span class="skill-label">Theory</span><span>Lyapunov analysis, Riemannian optimization, constrained generation</span></div>
       <div class="skill-row"><span class="skill-label">Programming</span><span>Python, C/C++, MATLAB / Simulink, Git, LaTeX</span></div>
     </section>
 
     <section>
       <h2>Selected Publications</h2>
       <ol class="pubs">
-        <li>Effective Model Pruning: Measuring the Redundancy of Model Components — <span class="pub-v"><em>ICML 2026</em></span> <span class="badge">Spotlight</span></li>
-        <li>Riemannian Lyapunov Framework: Optimization as Closed-Loop Control on Riemannian Manifolds — <span class="pub-v"><em>NeurIPS 2026</em></span></li>
-        <li>Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation — <span class="pub-v"><em>NeurIPS 2024</em></span></li>
-        <li>Quantifying Trade-Offs Between Stability and Goal-Obfuscation — <span class="pub-v"><em>IEEE CDC 2026</em></span></li>
-        <li>Goal Inference with Rao-Blackwellized Particle Filters — <span class="pub-v"><em>IFAC World Congress 2026</em></span></li>
+        <li><div class="pub-row"><span>Effective Model Pruning: Measuring the Redundancy of Model Components</span><span class="pub-v"><em>ICML 2026</em> <span class="badge">Spotlight</span></span></div></li>
+        <li><div class="pub-row"><span>Riemannian Lyapunov Framework: Optimization as Closed-Loop Control on Riemannian Manifolds</span><span class="pub-v"><em>NeurIPS 2026</em></span></div></li>
+        <li><div class="pub-row"><span>Off-Dynamics Reinforcement Learning via Domain Adaptation and Reward Augmented Imitation</span><span class="pub-v"><em>NeurIPS 2024</em></span></div></li>
+        <li><div class="pub-row"><span>Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization</span><span class="pub-v"><em>Preprint</em></span></div></li>
+        <li><div class="pub-row"><span>Skeletons in Flow: Graph Structured Flow Matching for Human Motion Prediction</span><span class="pub-v"><em>Preprint</em></span></div></li>
       </ol>
     </section>
 
     <section class="compact-section">
       <h2>Professional Service</h2>
-      <p class="service"><b>Conference Reviewer:</b> ICLR, ICML, NeurIPS (since 2025).</p>
+      <p class="service"><b>Reviewer:</b> NeurIPS 2025–2026; ICML 2026; ICLR 2026</p>
     </section>
 
     <section>
       <h2>Education</h2>
       <div class="entry"><span><b>University of Florida</b> — Ph.D., Mechanical &amp; Aerospace Engineering</span><span class="entry-date">2024 – 2027 (exp.)</span></div>
-      <div class="entry"><span><b>Johns Hopkins University</b> — M.S., Computer Science</span><span class="entry-date">2023 – 2024</span></div>
-      <div class="entry"><span><b>University of Florida</b> — M.S., Mechanical Engineering</span><span class="entry-date">2020 – 2022</span></div>
-      <div class="entry"><span><b>Tongji University</b> — B.S., Mechanical Design, Manufacture and Automation</span><span class="entry-date">2015 – 2020</span></div>
+      <div class="entry"><span>M.S. CS, <b>Johns Hopkins University</b> (2024); M.S. ME, <b>University of Florida</b> (2022); B.S. ME, <b>Tongji University</b> (2020)</span></div>
     </section>
+
+    <p class="updated no-print">Last updated: September 2026</p>
 
   </div>
 

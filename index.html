@@ -100,6 +100,34 @@
   .nav a { color: var(--text-muted); font-size: .92rem; }
   .nav a:hover { color: var(--accent); text-decoration: none; }
 
+  /* CV dropdown in the nav */
+  .nav-menu { position: relative; }
+  .nav-menu summary {
+    list-style: none; cursor: pointer; user-select: none;
+    color: var(--text-muted); font-size: .92rem;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .nav-menu summary::-webkit-details-marker { display: none; }
+  .nav-menu summary::after {
+    content: ""; width: 6px; height: 6px; margin-top: -3px;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg); transition: transform .15s ease;
+  }
+  .nav-menu[open] summary::after { transform: rotate(-135deg); margin-top: 3px; }
+  .nav-menu summary:hover, .nav-menu[open] summary { color: var(--accent); }
+  .nav-menu-list {
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 30;
+    min-width: 210px; padding: 6px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  }
+  .nav .nav-menu-list a {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 10px; border-radius: 7px; color: var(--text); white-space: nowrap;
+  }
+  .nav .nav-menu-list a:hover { background: var(--chip-bg); color: var(--accent); }
+  .nav-menu-list .fmt { color: var(--text-faint); font-size: .8rem; }
+
   .toggle {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; padding: 0;
@@ -213,6 +241,7 @@
     .nav { gap: 16px; }
     .nav a { display: none; }
     .nav a.nav-keep { display: inline-block; }
+    .nav .nav-menu-list a { display: flex; }
     .intro { flex-direction: column; text-align: center; gap: 20px; padding-top: 40px; }
     .links { justify-content: center; }
     .intro-text h1 { font-size: 1.85rem; }
@@ -232,7 +261,14 @@
         <a href="#news">News</a>
         <a class="nav-keep" href="#publications">Publications</a>
         <a href="#education">Education</a>
-        <a class="nav-keep" href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">CV</a>
+        <details class="nav-menu">
+          <summary>CV</summary>
+          <div class="nav-menu-list">
+            <a href="files/Yixuan_Wang_CV.pdf" target="_blank" rel="noopener">Academic CV <span class="fmt">PDF</span></a>
+            <a href="files/Yixuan_Wang_Research_Resume.pdf" target="_blank" rel="noopener">Research Resume <span class="fmt">PDF</span></a>
+            <a href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">Academic CV <span class="fmt">HTML</span></a>
+          </div>
+        </details>
         <a href="snake.html">Fun Stuffs</a>
         <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -281,7 +317,7 @@
     <section id="about">
       <h2>About</h2>
       <p class="lead">I am a PhD student in the Nonlinear Controls and Robotics group at the University of Florida, advised by Professor <a href="https://scholar.google.com/citations?user=ORU4Ja4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener">Warren E. Dixon</a> and coadvised by Professor <a href="https://scholar.google.com/citations?user=ruBLg7wAAAAJ" target="_blank" rel="noopener">Dan P. Guralnik</a>.</p>
-      <p>I study machine learning systems, including generative models and large language models, through the lens of nonlinear control and dynamical systems. I use Lyapunov analysis, geometry, and optimization to understand and interpret their behavior and investigate the manifold structures underlying learning and generation. My goal is to use this understanding to improve model structure and develop new algorithms with rigorous guarantees on stability, convergence, and safety.</p>
+      <p>I study machine learning systems, especially generative models, through the lens of nonlinear control and dynamical systems. I use Lyapunov analysis, geometry, and optimization to understand and interpret their behavior and investigate the manifold structures underlying learning and generation. My goal is to use this understanding to improve model structure and develop new algorithms with rigorous guarantees on stability, convergence, and safety.</p>
       <p>Before joining UF for my PhD, I earned an M.S. in Computer Science from Johns Hopkins University and an M.S. in Mechanical Engineering from UF. I received my B.S. from Tongji University in Shanghai.</p>
       <p class="beyond"><b>Beyond research.</b> You'll likely find me by the water — a fisherman who enjoys the patience and calm of a good catch. I believe the best ideas come when you step away from the whiteboard.</p>
     </section>
@@ -289,10 +325,11 @@
     <!-- Job market -->
     <section id="job-market">
       <h2>Job Market</h2>
-      <p class="lead"><b>I will graduate in May 2027 and am seeking research scientist and postdoctoral positions.</b></p>
+      <p class="lead">I will complete my PhD in May 2027 and am seeking <b>postdoctoral</b> and <b>research scientist</b> positions.</p>
+      <p>My <a href="files/Yixuan_Wang_CV.pdf" target="_blank" rel="noopener">Academic CV</a> is intended for postdoctoral, faculty, and national laboratory positions; my <a href="files/Yixuan_Wang_Research_Resume.pdf" target="_blank" rel="noopener">Research Resume</a> is intended for industry research scientist roles.</p>
       <div class="pub-links">
-        <a class="pub-link" href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">Academic CV</a>
-        <a class="pub-link" href="files/Yixuan_Wang_Research_Resume.pdf" target="_blank" rel="noopener">Research Resume</a>
+        <a class="pub-link" href="files/Yixuan_Wang_CV.pdf" target="_blank" rel="noopener">Academic CV (PDF)</a>
+        <a class="pub-link" href="files/Yixuan_Wang_Research_Resume.pdf" target="_blank" rel="noopener">Research Resume (PDF)</a>
       </div>
     </section>
 
@@ -318,7 +355,7 @@
         <li><div class="news-date">Aug 2026</div><div class="news-body">New preprint: <em>“<a href="https://arxiv.org/abs/2608.16072" target="_blank" rel="noopener">Learn What's Left, Not What's Mastered: Saturation Aware Advantage Reweighting for Multi-Reward Policy Optimization</a>.”</em></div></li>
         <li><div class="news-date">Aug 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a>”</em> accepted to <strong>IEEE CDC 2026</strong>.</div></li>
         <li><div class="news-date">May 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning</a>”</em> accepted to <strong>ICML 2026</strong> as a Spotlight.</div></li>
-        <li><div class="news-date">Mar 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a>”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
+        <li><div class="news-date">Mar 2026</div><div class="news-body"><em>“<a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Rao-Blackwellized particle filter for agent's intention inference</a>”</em> accepted to <strong>IFAC World Congress 2026</strong>.</div></li>
       </ul>
     </section>
 
@@ -331,7 +368,7 @@
           <a class="pub-thumb" href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener"><img src="images/pubs/model-pruning.png" alt="3D illustration of the nested B-nu balls and the probability simplex from the Effective Model Pruning paper" loading="lazy"></a>
           <div class="pub-body">
             <h3 class="pub-title"><a href="https://arxiv.org/abs/2509.25606" target="_blank" rel="noopener">Effective Model Pruning: Measuring the Redundancy of Model Components</a></h3>
-            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Saiedeh Akbari, Warren Dixon</div>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Saiedeh Akbari, Warren E. Dixon</div>
             <div class="pub-meta"><span class="pub-venue">ICML 2026</span><span class="pub-award">Spotlight</span></div>
             <div class="pub-tldr">Given any importance scores over model components, how many can be dropped for free? The effective sample size of the score distribution yields an adaptive sparsity level with a provable bound on the loss change.</div>
             <div class="pub-links">
@@ -414,7 +451,7 @@
         <li class="pub">
           <a class="pub-thumb" href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener"><img src="images/pubs/rbpf-inference.gif" alt="Animated demo of RBPF intent inference: particle intents converging onto the agent's true goal" loading="lazy"></a>
           <div class="pub-body">
-            <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Goal Inference with Rao-Blackwellized Particle Filters</a></h3>
+            <h3 class="pub-title"><a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">Rao-Blackwellized particle filter for agent's intention inference</a></h3>
             <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</div>
             <div class="pub-meta"><span class="pub-venue">IFAC World Congress 2026</span></div>
             <div class="pub-tldr">An RBPF can infer your agent's goal simply from observing its past trajectory.</div>
@@ -430,7 +467,7 @@
           <a class="pub-thumb" href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener"><img src="images/pubs/obfuscation-trajectory.gif" alt="Animated demo comparing an assumed agent's direct trajectory with an obfuscating agent weaving inside the tracking envelope" loading="lazy"></a>
           <div class="pub-body">
             <h3 class="pub-title"><a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">Quantifying Trade-Offs Between Stability and Goal-Obfuscation</a></h3>
-            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan Guralnik, Warren Dixon</div>
+            <div class="pub-authors"><strong>Yixuan Wang</strong>, Dan P. Guralnik, Warren E. Dixon</div>
             <div class="pub-meta"><span class="pub-venue">IEEE CDC 2026</span></div>
             <div class="pub-tldr">Given an adversary trying to infer your goal, probabilistic control barrier functions (PCBFs) provide formal bounds on goal information disclosure while preserving the underlying tracking objective.</div>
             <div class="pub-links">
@@ -499,7 +536,7 @@
 
   <footer>
     <div class="wrap">
-      © 2026 Yixuan Wang · <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a>
+      © 2026 Yixuan Wang · <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a> · Last updated September 2026
     </div>
   </footer>
 
@@ -517,6 +554,17 @@
       document.documentElement.setAttribute('data-theme', next);
       syncLabel();
       try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  })();
+
+  (function () {
+    var menu = document.querySelector('.nav-menu');
+    if (!menu) return;
+    document.addEventListener('click', function (e) {
+      if (menu.open && !menu.contains(e.target)) menu.open = false;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') menu.open = false;
     });
   })();
   </script>
