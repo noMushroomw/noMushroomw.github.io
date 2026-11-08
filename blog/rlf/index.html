@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stop discovering optimizers. Start designing them. · Yixuan Wang</title>
+<meta name="description" content="SGD, Adam, Lion, Muon: every one of them measures a gradient, decides an update, applies it, and measures again. That is a feedback controller. A companion to the NeurIPS 2026 paper Riemannian Lyapunov Framework.">
+<meta name="author" content="Yixuan Wang">
+<link rel="canonical" href="https://nomushroomw.github.io/blog/rlf/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Stop discovering optimizers. Start designing them.">
+<meta property="og:description" content="SGD, Adam, Lion, Muon: every one of them measures a gradient, decides an update, applies it, and measures again. That is a feedback controller.">
+<meta property="og:url" content="https://nomushroomw.github.io/blog/rlf/">
+<meta property="og:image" content="https://nomushroomw.github.io/images/pubs/riemannian-lyapunov.png">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Same theme logic and storage key as the homepage, set before paint to avoid a flash. -->
+<script>
+(function () {
+  function osPrefersDark() {
+    try { return window.matchMedia('(prefers-color-scheme: dark)').matches; }
+    catch (e) { return false; }
+  }
+  var theme;
+  try {
+    var t = localStorage.getItem('theme');
+    theme = (t === 'dark' || t === 'light') ? t : (osPrefersDark() ? 'dark' : 'light');
+  } catch (e) {
+    theme = osPrefersDark() ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f4ee; --panel: #ffffff; --ink: #141414; --ink2: #3a3a38; --muted: #6d6d68;
+    --line: #e2dfd5; --line2: #cfccc2; --accent: #2f5bd6;
+    --sgd: #6b6b66; --mom: #b5651d; --adam: #2f5bd6; --lion: #c98f12; --muon: #7c3aed; --rlo: #1f9c6b; --red: #d2452f;
+    /* surfaces and canvas colours, redefined for dark mode below */
+    --box: #ffffff; --surface-2: #f8f7f2; --surface-3: #f1efe7; --knob-bg: #f0eee6; --bar-bg: #ece9df;
+    --nav-bg: rgba(246,244,238,0.92); --callout-bg: #fff7e3; --note-bg: #eef2ff;
+    --share-bg: #141414; --share-line: transparent; --on-accent: #ffffff;
+    --cv-grid: #f0eee7; --cv-axis: #cfccc2; --cv-tick: #9a9a94; --cv-title: #4a4a48; --cv-curve: #141414;
+    --cv-start: #8a8a84; --cv-labelbg: rgba(255,255,255,0.92); --cv-loss: #bdbbb3;
+    --cv-grid2: #eceae2; --cv-axis2: #d9d6cb; --cv-matrix: #3a3a38;
+    color-scheme: light;
+    --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --W: 1000px;
+  }
+  /* Dark mode: same theme switch and near-black background as the homepage (data-theme on <html>).
+     Optimizer colours stay 6-digit hex because the script appends an alpha byte to them. */
+  [data-theme="dark"] {
+    --bg: #060608; --panel: #0f0f14; --ink: #e7e7ea; --ink2: #c3c3cb; --muted: #9a9aa3;
+    --line: #1f1f27; --line2: #34343f; --accent: #74a2ff;
+    --sgd: #a1a19a; --mom: #e08a3c; --adam: #7aa0ff; --lion: #e6b035; --muon: #a78bfa; --rlo: #3cc48f; --red: #f0705a;
+    --box: #14141b; --surface-2: #16161d; --surface-3: #191921; --knob-bg: #22222b; --bar-bg: #24242d;
+    --nav-bg: rgba(6,6,8,0.85); --callout-bg: #1c170a; --note-bg: #0f1531;
+    --share-bg: #111117; --share-line: #26262f; --on-accent: #0b0b0f;
+    --cv-grid: #1c1c24; --cv-axis: #34343f; --cv-tick: #6f6f79; --cv-title: #b4b4bd; --cv-curve: #e7e7ea;
+    --cv-start: #85858f; --cv-labelbg: rgba(15,15,20,0.92); --cv-loss: #5a5a64;
+    --cv-grid2: #1f1f27; --cv-axis2: #3a3a45; --cv-matrix: #d4d4dc;
+    color-scheme: dark;
+  }
+  [data-theme="dark"] .buy .tag.t1 { color: #ff9e8f; background: #2a1411; }
+  [data-theme="dark"] .buy .tag.t2 { color: #a3b8ff; background: #121a36; }
+  [data-theme="dark"] .buy .tag.t3 { color: #c4b5fd; background: #1d1435; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background-color .25s ease, color .25s ease; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--W); margin: 0 auto; padding: 0 24px; }
+  .katex { font-size: 1.06em; }
+  /* KaTeX's hidden MathML copy is absolutely positioned; anchoring it to .katex keeps it inside
+     scrolling containers (the table, wide equations) instead of widening the page on phones. */
+  .katex { position: relative; }
+  .katex-display { margin: 14px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+  nav { position: sticky; top: 0; z-index: 50; background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { max-width: var(--W); margin: 0 auto; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .nav-inner .brand { font-family: var(--serif); font-weight: 600; font-size: 16px; white-space: nowrap; }
+  .brand a { color: var(--ink); }
+  .brand a:hover { color: var(--accent); text-decoration: none; }
+  .brand .sep { color: var(--line2); font-weight: 400; margin: 0 7px; }
+  .brand .here { color: var(--muted); font-weight: 500; }
+  .nav-inner .links a { margin-left: 16px; color: var(--muted); font-size: 13px; }
+  .nav-inner .links a:hover { color: var(--ink); text-decoration: none; }
+  .nav-right { display: flex; align-items: center; }
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; padding: 0; margin-left: 18px;
+    border: 1px solid var(--line2); border-radius: 9px;
+    background: transparent; color: var(--muted); cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .toggle svg { width: 16px; height: 16px; }
+  .icon-sun { display: none; }
+  [data-theme="dark"] .icon-sun { display: block; }
+  [data-theme="dark"] .icon-moon { display: none; }
+
+  header.hero { padding: 88px 0 56px; border-bottom: 1px solid var(--line); }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 22px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(36px, 6vw, 60px); line-height: 1.04; letter-spacing: -0.02em; margin: 0 0 24px; }
+  h1 .m { color: var(--muon); } h1 .a { color: var(--adam); } h1 .s { color: var(--sgd); }
+  .lede { font-size: clamp(17px, 2.1vw, 20px); color: var(--ink2); margin: 0 0 34px; }
+  .hero-links a { display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; border: 1px solid var(--line2); background: var(--panel); transition: transform 0.15s; }
+  .hero-links a.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .hero-links a:hover { text-decoration: none; transform: translateY(-1px); }
+  .hero-meta { margin-top: 6px; font-size: 14px; color: var(--ink2); }
+  .hero-meta b { font-weight: 600; color: var(--ink); }
+  .toc { margin-top: 36px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px 10px; }
+  .toc .h { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 28px; }
+  .toc li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+  .toc li:nth-last-child(-n+2) { border-bottom: none; }
+  .toc li .n { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+  .toc li a { color: var(--ink); font-weight: 600; }
+  .toc li span.d { display: block; color: var(--muted); font-size: 13.5px; font-weight: 400; margin-top: 1px; }
+  .toc li a:hover { text-decoration: none; color: var(--accent); }
+  .al-box .pair { display: grid; grid-template-columns: 78px 1fr; gap: 4px 8px; font-size: 14px; color: var(--ink2); margin-top: 6px; }
+  .al-box .pair .k { font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: 0.04em; padding-top: 3px; }
+  .al-box .pair .v b { color: var(--accent); font-weight: 600; }
+  .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+  .res { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; }
+  .res .big { font-family: var(--serif); font-size: 44px; line-height: 1; letter-spacing: -0.02em; color: var(--rlo); }
+  .res .big small { font-size: 18px; color: var(--muted); letter-spacing: 0; }
+  .res .what { font-size: 14.5px; color: var(--ink); margin: 8px 0 2px; font-weight: 600; }
+  .res .src { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .res-wide { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 12px; margin: 12px 0; }
+  .res-wide .t { font-family: var(--serif); font-size: 20px; margin-bottom: 2px; }
+  .res-wide .s { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .more { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
+  .more li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 15px; display: grid; grid-template-columns: 210px 1fr; gap: 14px; align-items: baseline; }
+  .more li .k { font-family: var(--serif); font-size: 17px; }
+  @media (max-width: 760px) { .toc ol, .results, .res-grid { grid-template-columns: 1fr; } .more li { grid-template-columns: 1fr; } }
+
+  section { padding: 64px 0; border-bottom: 1px solid var(--line); }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .section-num { font-family: var(--mono); font-size: 11.5px; color: var(--accent); letter-spacing: 0.08em; border: 1px solid var(--line2); border-radius: 999px; padding: 2px 9px; background: var(--panel); white-space: nowrap; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(26px, 3.8vw, 36px); line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.015em; }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 23px; margin: 36px 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 16.5px; }
+  p { margin: 0 0 16px; }
+  .small { font-size: 14px; color: var(--muted); }
+
+  .callout { background: var(--callout-bg); border-left: 3px solid var(--lion); padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 22px 0; font-size: 15.5px; }
+  .callout strong { font-family: var(--serif); font-size: 17px; }
+  .note { background: var(--note-bg); border-left: 3px solid var(--adam); padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 22px 0; font-size: 15.5px; }
+  .note strong { font-family: var(--serif); font-size: 17px; }
+
+  /* question cards (section 00) */
+  .qgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0; }
+  .q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; }
+  .q .qq { font-family: var(--serif); font-size: 19px; line-height: 1.3; margin-bottom: 8px; }
+  .q .qa { font-size: 14.5px; color: var(--ink2); }
+  .q .qa b { color: var(--red); font-weight: 600; }
+
+  /* three box control loop (section 01) */
+  .abstract-loop { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px 18px; margin: 18px 0 24px; }
+  .al-row { display: grid; grid-template-columns: minmax(0,1fr) 92px minmax(0,1fr) 92px minmax(0,1fr); gap: 0; align-items: stretch; }
+  .al-box { border: 1.5px solid var(--line2); border-radius: 12px; padding: 14px 14px 12px; background: var(--box); }
+  .al-box .h { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
+  .al-box .ctrl { font-family: var(--serif); font-size: 19px; margin-bottom: 4px; }
+  .al-box .opt { font-size: 14px; color: var(--ink2); }
+  .al-box .opt b { color: var(--accent); }
+  .al-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 12px; color: var(--line2); font-size: 26px; }
+  .al-arrow .t { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; }
+  .al-fb { margin: 12px 6px 0; border-top: 1.5px dashed var(--line2); height: 26px; position: relative; }
+  .al-fb .ft { position: absolute; left: 50%; transform: translateX(-50%); top: 5px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: var(--panel); padding: 0 8px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .col-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 12px; font-size: 15px; }
+  .col-card .t { font-family: var(--serif); font-size: 20px; margin-bottom: 8px; }
+  .col-card ul { margin: 0; padding-left: 18px; }
+  .col-card li { margin-bottom: 6px; }
+
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 14px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--line2); background: var(--panel); cursor: pointer; color: var(--ink2); transition: all 0.15s; }
+  .chip:hover { border-color: var(--ink); }
+  .chip.active { color: var(--on-accent); }
+
+  /* loop diagram (section 02) */
+  .loop { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px 16px; margin: 10px 0 20px; }
+  .loop-row { display: grid; grid-template-columns: minmax(0,0.8fr) 38px minmax(0,0.8fr) 38px minmax(0,1.6fr) 38px minmax(0,1.2fr) 38px minmax(0,1.3fr); align-items: stretch; }
+  .blk { border: 1.5px solid var(--line2); border-radius: 12px; padding: 12px 8px 10px; min-height: 210px; display: flex; flex-direction: column; background: var(--box); transition: border-color 0.2s, box-shadow 0.2s; }
+  .blk .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+  .blk .lbl .knob { font-size: 10px; padding: 1px 7px; border-radius: 999px; background: var(--knob-bg); color: var(--muted); white-space: nowrap; }
+  .blk .ask { font-family: var(--serif); font-style: italic; font-size: 13.5px; color: var(--ink2); line-height: 1.3; margin: 6px 0 4px; min-height: 56px; }
+  .blk .f { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow-x: auto; padding: 8px 0; }
+  .blk .f .katex { font-size: 1.08em; white-space: nowrap; }
+  /* overflow: visible so KaTeX's 2px overhang does not give every block its own scrollbar; .f still scrolls real overflow */
+  .blk .f .katex-display { margin: 0; padding: 0; overflow: visible; }
+  .blk .plain { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.35; min-height: 34px; }
+  .blk.hot { box-shadow: 0 0 0 3px var(--hot-bg, #eef2ff); border-color: var(--hot, var(--accent)); }
+  .blk.hot .lbl .knob { background: var(--hot, var(--accent)); color: var(--on-accent); }
+  .blk.plant { background: var(--surface-2); border-style: dashed; }
+  .arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--line2); }
+  .arrow .ar { font-size: 24px; line-height: 1; }
+  .arrow .sig { margin-top: 2px; }
+  .arrow .sig .katex { font-size: 1.2em; color: var(--ink); }
+  .feedback { margin: 12px 4px 0; border-top: 1.5px dashed var(--line2); position: relative; height: 28px; }
+  .feedback:before, .feedback:after { content: ""; position: absolute; top: -15px; width: 1.5px; height: 15px; border-left: 1.5px dashed var(--line2); }
+  .feedback:before { left: 0; } .feedback:after { right: 0; }
+  .feedback .ft { position: absolute; left: 50%; transform: translateX(-50%); top: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: var(--panel); padding: 0 8px; white-space: nowrap; }
+  .signals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+  .signals div { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  .signals .katex { font-size: 1.15em; color: var(--ink); }
+  .loop-note { font-size: 15px; color: var(--ink2); margin: 16px 4px 0; min-height: 60px; line-height: 1.6; }
+  .loop-note b { font-family: var(--serif); font-size: 17px; color: var(--ink); }
+  .loop-note .diff { display: inline-block; font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 999px; color: var(--on-accent); margin-right: 6px; vertical-align: 2px; }
+
+  .tablewrap { overflow-x: auto; margin: 18px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; background: var(--panel); border-radius: 12px; overflow: hidden; min-width: 760px; }
+  th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; line-height: 1.5; }
+  th { background: var(--surface-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+  th .katex { font-size: 1.25em; }
+  tr:last-child td { border-bottom: none; }
+  td .katex { font-size: 1.12em; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td .sw { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 7px; vertical-align: 1px; }
+
+  /* viz */
+  .viz-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 14px 10px; margin: 12px 0 22px; overflow: hidden; }
+  .viz-card canvas { display: block; width: 100%; border-radius: 10px; }
+  .viz-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; }
+  .viz-title { font-family: var(--mono); font-size: 12px; color: var(--ink2); font-weight: 600; padding: 0 6px 6px; }
+  .viz-caption { font-family: var(--mono); font-size: 12px; color: var(--muted); padding: 10px 6px 4px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); padding: 6px 6px 8px; }
+  .legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+  .legend .dash { display: inline-block; width: 18px; border-top: 2px dashed var(--ink); margin-right: 6px; vertical-align: 3px; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 20px; padding: 10px 6px 12px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  .ctl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; margin-bottom: 4px; }
+  .ctl label b { color: var(--ink); font-weight: 600; }
+  .ctl .hb { font-family: var(--mono); font-size: 11px; margin-top: 5px; color: var(--rlo); }
+  .ctl .hb.out { color: var(--red); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--line2); border-radius: 999px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 999px; background: var(--accent); cursor: pointer; border: 3px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 999px; background: var(--accent); cursor: pointer; border: 3px solid var(--panel); }
+  .seg { display: inline-flex; border: 1.5px solid var(--line2); border-radius: 999px; overflow: hidden; }
+  .seg button { border: none; background: var(--box); padding: 5px 12px; font-family: var(--mono); font-size: 12px; cursor: pointer; color: var(--ink2); }
+  .seg button.active { background: var(--ink); color: var(--bg); }
+  .btn { border: 1.5px solid var(--line2); background: var(--box); border-radius: 999px; padding: 6px 14px; font-family: var(--mono); font-size: 12px; cursor: pointer; color: var(--ink); }
+  .btn:hover { border-color: var(--ink); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 6px 6px 4px; }
+  .stat { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .stat .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; color: var(--muted); }
+  .stat .v { font-family: var(--mono); font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+  .steps { counter-reset: s; margin: 18px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .step-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 12px; font-size: 14.5px; position: relative; }
+  .step-card:before { counter-increment: s; content: counter(s); position: absolute; top: 12px; right: 14px; font-family: var(--mono); font-size: 11px; color: var(--accent); border: 1px solid var(--line2); border-radius: 999px; padding: 1px 7px; }
+  .step-card .t { font-family: var(--serif); font-size: 18px; margin-bottom: 4px; padding-right: 36px; }
+
+  .recipes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 10px 0 8px; }
+  .recipe { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14.5px; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+  .recipe:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .recipe .t { font-family: var(--serif); font-size: 17px; margin-bottom: 4px; }
+  .recipe .c { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+
+  .math-block { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px 8px; margin: 18px 0 22px; }
+  .math-block .step { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted); margin: 8px 0 0; }
+
+  .payoffs { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 18px 0; }
+  .payoff { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 14px; display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); gap: 18px; align-items: stretch; }
+  .payoff .t { font-family: var(--serif); font-size: 21px; margin-bottom: 6px; }
+  .payoff .t .n { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-right: 8px; vertical-align: 3px; }
+  .payoff p { font-size: 15px; margin-bottom: 8px; }
+  .payoff .ev { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; }
+  .payoff .ev .katex-display { overflow-x: auto; }
+  .payoff .ev .katex { font-size: 1.05em; }
+  .payoff .ev .h { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 58px; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
+  .bar-row .n { font-family: var(--mono); font-size: 12px; color: var(--ink2); text-align: right; }
+  .bar-row .b { height: 14px; background: var(--bar-bg); border-radius: 4px; overflow: hidden; }
+  .bar-row .b i { display: block; height: 100%; border-radius: 4px; }
+  .bar-row .v { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .ev .katex-display { margin: 6px 0; }
+
+  .buys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+  .buy { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 8px; }
+  .buy .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; font-weight: 700; padding: 3px 9px; border-radius: 999px; display: inline-block; margin-bottom: 10px; }
+  .buy .tag.t1 { color: #a83227; background: #fdeae7; } .buy .tag.t2 { color: #2945a8; background: #e8ecff; } .buy .tag.t3 { color: #5b21b6; background: #efe9fe; }
+  .buy .t { font-family: var(--serif); font-size: 19px; line-height: 1.3; margin-bottom: 8px; }
+  .buy p { font-size: 14.5px; color: var(--ink2); line-height: 1.6; }
+  @media (max-width: 860px) { .buys { grid-template-columns: 1fr; } }
+  .muon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .muon-grid .pane { text-align: center; }
+  .muon-grid .pane .t { font-family: var(--mono); font-size: 12px; margin: 6px 0 2px; font-weight: 600; }
+  .muon-grid .pane .sv { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .share { background: var(--share-bg); border: 1px solid var(--share-line); color: #f2f2ec; border-radius: 18px; padding: 30px 26px; margin: 28px 0 10px; }
+  .share h3 { color: #c4b5fd; margin: 0 0 12px; font-family: var(--serif); font-weight: 500; font-size: 22px; }
+  .share p { color: #d6d6cc; font-size: 14.5px; }
+  .share .snippet { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 16px; font-family: var(--mono); font-size: 13px; line-height: 1.6; color: #e6e6dd; white-space: pre-wrap; margin: 14px 0; max-height: 320px; overflow-y: auto; }
+  .share button { background: #fff; color: #141414; border: none; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+  .share button:hover { opacity: 0.85; }
+  .share .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+
+  footer { padding: 44px 0 80px; font-size: 14px; color: var(--muted); }
+  footer .cite { font-family: var(--mono); font-size: 12.5px; background: var(--surface-3); padding: 14px 16px; border-radius: 10px; margin: 16px 0; line-height: 1.6; white-space: pre; overflow-x: auto; }
+
+  @media (max-width: 900px) {
+    .brand .here-wrap { display: none; }
+    .loop-row { grid-template-columns: 1fr; }
+    .arrow { flex-direction: row; gap: 10px; height: 34px; }
+    .arrow .ar { transform: rotate(90deg); }
+    .signals { grid-template-columns: 1fr; }
+    .viz-grid, .two-col, .payoff, .steps, .recipes { grid-template-columns: minmax(0, 1fr); }
+    .qgrid { grid-template-columns: minmax(0, 1fr); }
+    .al-row { grid-template-columns: minmax(0, 1fr); }
+    .al-arrow { transform: rotate(90deg); height: 30px; }
+    .al-arrow .t { display: none; }
+  }
+  @media (max-width: 640px) {
+    .nav-inner .links a { margin-left: 10px; font-size: 12px; }
+    .nav-inner .links { display: none; }
+    header.hero { padding: 56px 0 40px; }
+    section { padding: 44px 0; }
+    .muon-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <span class="brand"><a href="../../">Yixuan Wang</a><span class="sep">/</span><a href="../">Blog</a><span class="here-wrap"><span class="sep">/</span><span class="here">Optimizers as controllers</span></span></span>
+    <span class="nav-right">
+    <span class="links">
+      <a href="#why">Why</a>
+      <a href="#loop">Four parts</a>
+      <a href="#example">Toy example</a>
+      <a href="#muon">Muon</a>
+      <a href="#theory">Certificate</a>
+      <a href="#paper">Paper</a>
+    </span>
+    <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
+    </span>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Optimizer design · control theory · NeurIPS 2026</div>
+    <h1>Stop discovering optimizers. Start designing them.</h1>
+    <p class="lede">SGD, Adam, Lion, Muon: every one of them measures a gradient, decides an update, applies it, and measures again. That is a feedback controller, and control theory has spent seventy years learning how to design such loops and prove they work. The <a href="https://arxiv.org/abs/2601.22284v2" target="_blank" rel="noopener">Riemannian Lyapunov Framework</a> is what you get when those tools are brought to optimizer design: one loop with four swappable parts, one certificate whose form stays fixed when you swap them, provided the parts you swap in satisfy its assumptions, and a map on which every optimizer you know is a single point.</p>
+    <div class="hero-meta"><a href="https://nomushroomw.github.io" target="_blank" rel="noopener"><b>Yixuan Wang</b></a> · <a href="https://scholar.google.com/citations?user=qoV6OtEAAAAJ&hl=en" target="_blank" rel="noopener">Google Scholar</a> · <a href="https://www.linkedin.com/in/yixuan-wang-b81200293" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://x.com/nomushroomw" target="_blank" rel="noopener">@nomushroomw</a></div>
+    <div class="toc">
+      <div class="h">CONTENTS</div>
+      <ol>
+        <li><span class="n">01</span><a href="#why">Why build a framework at all?<span class="d">Why compare optimizers, and why control theory of all things</span></a></li>
+        <li><span class="n">02</span><a href="#loop">Four parts that determine an optimizer<span class="d">What they are, and how the common optimizers fill them</span></a></li>
+        <li><span class="n">03</span><a href="#example">A one dimensional toy example<span class="d">Watch the controller's state move as you turn the knobs</span></a></li>
+        <li><span class="n">04</span><a href="#muon">Muon as a case study<span class="d">One knob, one algorithm</span></a></li>
+        <li><span class="n">05</span><a href="#theory">The Lyapunov certificate and what RLF buys you<span class="d">Where the rule comes from, what it guarantees, what you can do with it</span></a></li>
+        <li><span class="n">06</span><a href="#paper">The paper<span class="d">Citation, links, and text to share</span></a></li>
+      </ol>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 01 WHY                                                        -->
+<!-- ============================================================ -->
+<section id="why">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">01</span><h2>Why build a framework at all?</h2></div>
+
+    <h3>Why compare these optimizers in the first place?</h3>
+    <p>Every few months there is a new optimizer. Lion, Sophia, Muon, Adafactor. Each arrives with its own paper, its own experiments, and its own "beats AdamW on X". The natural question is always: <em>is this one better than AdamW?</em></p>
+    <p>But that question treats optimizers as a catalog of tricks: pick the best one, throw away the rest. There is a more useful question: <b>what do they all have in common, and where exactly does each one differ?</b></p>
+    <p>If you can answer that, you can do something better than compare. You can <em>design</em>. You can say "I want Muon's direction but AdamW's memory" and have the language to describe it. You can say "I want a smooth direction field because smooth fields have thinner tubes" and have a reason. You can look at a new optimizer and immediately place it in the space.</p>
+
+    <h3>Why describe this in the language of control? Is this design for design's sake?</h3>
+    <p>No, and here is the concrete reason. We <em>already</em> have a language for optimizers: "it uses momentum", "it normalizes by second moments", "it takes the sign". That language is <b>descriptive</b>. It tells you what an algorithm does. It does not tell you how to design a new one, or why a given design works.</p>
+    <p>The language of control is <b>generative</b>. You state what the system should do, a reference to track and a stability condition to meet, and a construction procedure such as backstepping produces a controller together with the certificate that it meets the specification.</p>
+    <p>And an optimizer is already a control loop. Look at what it does at every step.</p>
+
+    <div class="abstract-loop">
+      <div class="al-row">
+        <div class="al-box"><div class="h">SENSOR</div><div class="ctrl">Measure</div>
+          <div class="pair"><span class="k">control</span><span class="v">a noisy measurement of the state</span><span class="k">optimizer</span><span class="v"><b>a stochastic gradient</b> at the current parameters</span></div></div>
+        <div class="al-arrow"><span>→</span><span class="t">measurement</span></div>
+        <div class="al-box"><div class="h">CONTROLLER</div><div class="ctrl">Decide</div>
+          <div class="pair"><span class="k">control</span><span class="v">a feedback law, possibly with internal state</span><span class="k">optimizer</span><span class="v"><b>the update rule</b>, possibly with memory such as momentum</span></div></div>
+        <div class="al-arrow"><span>→</span><span class="t">input</span></div>
+        <div class="al-box"><div class="h">DYNAMICS</div><div class="ctrl">Evolve</div>
+          <div class="pair"><span class="k">control</span><span class="v">the state evolves under the input</span><span class="k">optimizer</span><span class="v"><b>the parameters are updated</b> and the loss changes</span></div></div>
+      </div>
+      <div class="al-fb"><span class="ft">the new state is measured again</span></div>
+    </div>
+
+    <p>RLF, the Riemannian Lyapunov Framework, translates the generative capability into optimizer design. It treats the optimizer as the controller of this loop, writes the "reference" as a target set \(\Lambda\) in the space of parameter and velocity, writes the "stability condition" as a Lyapunov function \(V\), and uses backstepping to derive the update rule that makes \(V\) decrease. The four knobs that come out, metric, memory, direction field and contraction rate, fall out as the places where different optimizers make different choices.</p>
+
+    <div class="callout"><strong>What you get that a catalog cannot give you.</strong> A description tells you what an algorithm does. A construction procedure tells you what to build next. The framework does the second.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 02 THE DESIGN SPACE                                           -->
+<!-- ============================================================ -->
+<section id="loop">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">02</span><h2>Four parts that determine an optimizer</h2></div>
+    <p class="sub">To design an optimizer you need to know which parts determine it and what each one is responsible for. RLF names four. Fixing all four fixes the controller, and the common first order optimizers are particular choices of them.</p>
+
+    <p>Written as a controller, an optimizer is a chain of stages between one gradient measurement and the next parameter update. The measurement enters on the left, the update leaves on the right, and in between are the four parts, each a design decision that can be made independently of the others. Pick an optimizer below and every stage fills in with that optimizer's actual rule; the highlighted stages are the ones it changes relative to plain SGD.</p>
+
+    <div class="chips" id="opt-chips"></div>
+
+    <div class="loop">
+      <div class="loop-row">
+        <div class="blk plant" id="blk-plant">
+          <div class="lbl"><span>DYNAMICS</span></div>
+          <div class="ask">Where do the parameters live?</div>
+          <div class="f" id="f-plant"></div>
+          <div class="plain">the loss \(f\), the parameter \(\theta\), and its velocity \(v\)</div>
+        </div>
+        <div class="arrow"><span class="ar">→</span><span class="sig">\(\hat g_k\)</span></div>
+        <div class="blk" id="blk-memory">
+          <div class="lbl"><span>MEMORY</span><span class="knob">\(\Psi\)</span></div>
+          <div class="ask">What does the controller remember between steps?</div>
+          <div class="f" id="f-memory"></div>
+          <div class="plain" id="p-memory"></div>
+        </div>
+        <div class="arrow"><span class="ar">→</span><span class="sig">\(y_{k+1}\)</span></div>
+        <div class="blk" id="blk-target">
+          <div class="lbl"><span>DIRECTION FIELD</span><span class="knob">\(\Phi\)</span></div>
+          <div class="ask">Which velocity does the controller want right now?</div>
+          <div class="f" id="f-target"></div>
+          <div class="plain" id="p-target"></div>
+        </div>
+        <div class="arrow"><span class="ar">→</span><span class="sig">\(d_k\)</span></div>
+        <div class="blk" id="blk-lift">
+          <div class="lbl"><span>CONTRACTION</span><span class="knob">\(\eta\)</span></div>
+          <div class="ask">How fast is the real velocity pulled to the wanted one?</div>
+          <div class="f" id="f-lift"></div>
+          <div class="plain" id="p-lift"></div>
+        </div>
+        <div class="arrow"><span class="ar">→</span><span class="sig">\(v_{k+1}\)</span></div>
+        <div class="blk" id="blk-metric">
+          <div class="lbl"><span>STEP</span><span class="knob">\(g\)</span></div>
+          <div class="ask">How are lengths measured when the step is taken?</div>
+          <div class="f" id="f-metric"></div>
+          <div class="plain" id="p-metric"></div>
+        </div>
+      </div>
+      <div class="feedback"><span class="ft">\(\theta_{k+1}\) is measured again</span></div>
+      <div class="signals">
+        <div>\(\hat g_k\) &nbsp;the measurement: a stochastic gradient at \(\theta_k\)</div>
+        <div>\(y_{k+1}\) &nbsp;the memory after absorbing \(\hat g_k\)</div>
+        <div>\(d_k\) &nbsp;the wanted velocity, computed from memory and measurement</div>
+        <div>\(v_{k+1}\) &nbsp;the velocity actually used for the step</div>
+        <div>\(\theta_{k+1}\) &nbsp;the new parameter. Indices as in Algorithm 1 of the paper: \(d_k=\Phi(y_{k+1},\hat g_k)\)</div>
+      </div>
+      <div class="loop-note" id="loop-note"></div>
+    </div>
+
+    <p>To understand the four parts, take them one at a time. The <b>memory</b> \(\Psi\) is whatever the controller carries from one step to the next; SGD carries nothing, Adam carries two moving averages. The <b>direction field</b> \(\Phi\) turns memory and measurement into a wanted velocity \(d_k\); this is where sign, matrix sign, or a smooth saturation enters, and the set of states where the real velocity equals the wanted one is the target set \(\Lambda\). The <b>contraction</b> \(\eta\) is how much of the wanted velocity is adopted in one step; \(\eta=1\) means adopt it immediately, \(\eta<1\) means relax toward it. The <b>step</b> uses the metric \(g\) to decide how long a unit of velocity is in each direction; Adam's division by \(\sqrt{s}\) lives here, and Appendix B of the paper shows it is exactly a choice of Riemannian metric.</p>
+
+    <div class="callout"><strong>Momentum is the contraction knob.</strong> The contraction stage is \(v_{k+1}=(1-\eta)v_k+\eta\,d_k\). With \(d_k=\hat g_k\) this is the exponential moving average that heavy ball momentum computes, with \(\eta=1-\beta\), up to a rescaling of the step size (Polyak's form \(v_{k+1}=\beta v_k+\hat g_k\) has no \(1-\beta\) factor). A momentum coefficient is not a physical analogy; it is the rate at which the real velocity is pulled onto the wanted one.</div>
+
+    <h3>How the common optimizers fill the four parts</h3>
+    <div class="tablewrap">
+      <table id="opt-table">
+        <thead><tr><th>OPTIMIZER</th><th>METRIC \(g\)</th><th>MEMORY \(y_k\)</th><th>DIRECTION FIELD \(d_k\)</th><th>CONTRACTION \(\eta\)</th><th>DIRECTION GEOMETRY</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="small">The table follows Table 7 of the paper, where each row is discussed in detail. The Muon row is this page's reading; Muon is not in the paper.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 03 ONE DIMENSION                                              -->
+<!-- ============================================================ -->
+<section id="example">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">03</span><h2>A one dimensional toy example</h2></div>
+    <p class="sub">The loop above is abstract. Here it runs on the simplest possible loss, so you can watch the controller's internal state move and see how each knob changes its behavior.</p>
+
+    <p>Think of cruise control. A car has a position and a speed. The cruise controller decides a wanted speed and pushes the real speed toward it. Two things happen on different timescales: the speed matches the wanted speed quickly, and then, at that speed, the position drifts to where it should be slowly. If the real speed lags the wanted one, that lag is the quantity the engineer watches.</p>
+    <p>An optimizer in the control view is the same picture with the parameter \(\theta\) as position and the update velocity \(v\) as speed. The direction field \(\Phi\) is the rule for the wanted speed at each position. Plotting wanted speed against position gives a curve; this is the target set \(\Lambda\), drawn dashed below. The controller's first job is to get the state \((\theta,v)\) onto that curve, the fast motion. Its second job is to slide along the curve to the minimizer, the slow motion. The vertical gap between the state and the curve is the residual \(z=v-\Phi\), drawn in red. Everything in the certificate of Section 05 is a statement about \(z\).</p>
+
+    <div class="steps">
+      <div class="step-card"><div class="t">Start anywhere</div>The state begins off the curve: wrong position and wrong speed.</div>
+      <div class="step-card"><div class="t">Fast: match the speed</div>The contraction stage pulls \(v\) onto \(\Phi(\theta)\) in a few steps. The red gap shrinks while the position moves only a little.</div>
+      <div class="step-card"><div class="t">Slow: ride the curve</div>Now the speed is right and the position drifts to the minimizer at a rate set by the step size \(h\).</div>
+      <div class="step-card"><div class="t">What can go wrong</div>If the curve has a jump, the speed cannot settle on it. The gap keeps reopening and the energy stops decreasing. Try the sign field.</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="controls">
+        <div class="ctl"><label><span>direction field \(\Phi\)</span></label>
+          <div class="seg" id="phi-seg"><button data-v="grad">gradient</button><button data-v="tanh" class="active">tanh(5·)</button><button data-v="sign">sign</button></div></div>
+        <div class="ctl"><label><span>contraction \(\eta\)</span><b id="eta-v">0.30</b></label><input type="range" id="eta" min="0.05" max="1" step="0.05" value="0.30"></div>
+        <div class="ctl"><label><span>step size \(h\)</span><b id="h-v">0.010</b></label><input type="range" id="hstep" min="0.001" max="0.04" step="0.001" value="0.01"><div class="hb" id="h-bound"></div></div>
+        <div class="ctl"><label><span>gradient noise \(\sigma\)</span><b id="sig-v">0.00</b></label><input type="range" id="sigma" min="0" max="0.6" step="0.05" value="0"></div>
+        <div class="ctl" style="display:flex;align-items:flex-end;gap:8px"><button class="btn" id="replay">replay</button><button class="btn" id="reset">reset</button></div>
+      </div>
+      <div class="viz-grid">
+        <div>
+          <div class="viz-title">position \(\theta\) against velocity \(v\); loss \(f(\theta)=\tfrac12\theta^2\), minimizer at \(\theta^\star=0\)</div>
+          <canvas id="c-phase" style="height: 380px"></canvas>
+          <div class="legend"><span><span class="dash"></span>target set \(\Lambda\): wanted velocity \(\Phi(\theta)\)</span><span><span class="dot" style="background: var(--adam)"></span>fast phase (off the curve)</span><span><span class="dot" style="background: var(--rlo)"></span>slow phase (on the curve)</span><span><span class="dot" style="background: var(--red)"></span>residual \(z_k=v_k-d_k\), \(d_k=\Phi(\hat g_k)\)</span></div>
+        </div>
+        <div>
+          <div class="viz-title">the certificate's energy, step by step (log scale)</div>
+          <canvas id="c-lyap" style="height: 380px"></canvas>
+          <div class="legend"><span><span class="dot" style="background: var(--ink)"></span>\(V_k=\big(f(\theta_k)-f^\star\big)+z_k^2\)</span><span><span class="dot" style="background: var(--red)"></span>\(z_k^2\), the tracking part</span><span><span class="dot" style="background: var(--cv-loss)"></span>\(f(\theta_k)-f^\star\), the loss part</span></div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">STEP</div><div class="v" id="st-k">0</div></div>
+        <div class="stat"><div class="k">TAIL MEAN \(z_k^2\)</div><div class="v" id="st-z">–</div></div>
+        <div class="stat"><div class="k">TAIL MEAN \(V_k\)</div><div class="v" id="st-V">–</div></div>
+        <div class="stat"><div class="k">TAIL MEAN \(f(\theta_k)-f^\star\)</div><div class="v" id="st-loss">–</div></div>
+      </div>
+      <div class="viz-caption"><span>exact dynamics run here: \(\hat g_k=\theta_k+\sigma\xi_k\) with \(\xi_k\) uniform on \([-1,1]\), \(d_k=\Phi(\hat g_k)\), \(z_k=v_k-d_k\), \(v_{k+1}=(1-\eta)v_k+\eta d_k\), \(\theta_{k+1}=\theta_k-h\,v_{k+1}\). With \(\sigma=0\) the dashed curve is the target; with noise the target jitters around it and the red bar is drawn to the realized \(d_k\). This is the residual \(z_k=v_k-d_k\) of the paper's proof and notation table; Section 4.1 of the paper first defines \(z\) with the true gradient, and the two coincide when \(\sigma=0\). The sliders \(\eta\) and \(h\) are independent design knobs here; in the derivation they are tied by \(\eta=h/\tau\). The indicator under the step size slider evaluates the three step size conditions of Theorem 4.1 for the current field and \(\eta\), on the region \(|\theta|\le1.6\) shown; the binding one for \(\tanh(5\cdot)\) is \(h\le\eta/(\sqrt{24}\,L_\delta)\) with \(L_\delta=5\). Outside the range the theorem is silent; the loop may still converge, and \(V_k\) may rise at some steps. Blue and green mark the residual above and below \(0.12\), a display threshold, and the horizontal line is the mean of \(V_k\) over the displayed tail window, not a proven steady state. The number of steps grows as \(h\) shrinks (about \(4/h\), between 400 and 4000) so that small step sizes still reach the long run behavior.</span><span id="tail-win">tail = last half of 400 steps</span></div>
+    </div>
+
+    <h3>Four things to try</h3>
+    <div class="recipes">
+      <div class="recipe" data-phi="tanh" data-eta="0.3" data-h="0.01" data-sigma="0"><div class="t">The two timescales</div><div class="c">tanh · η 0.30 · h 0.01 · σ 0</div>Watch the blue segment: the state rises almost vertically onto the curve in a handful of steps while the position moves only a little. Then the green segment slides left along the curve for well over a hundred steps. The red curve on the right drops first; the grey loss curve follows later, and in this run \(V_k\) decreases at every step.</div>
+      <div class="recipe" data-phi="tanh" data-eta="1" data-h="0.01" data-sigma="0"><div class="t">Instant contraction, \(\eta=1\)</div><div class="c">tanh · η 1.00 · h 0.01 · σ 0</div>The velocity equals the wanted velocity at every step, so the only residual left is how much the wanted velocity moved since last step, \(z_{k+1}=-\delta_k\) with \(\delta_k=d_{k+1}-d_k\). This is what Lion and Muon do.</div>
+      <div class="recipe" data-phi="sign" data-eta="0.3" data-h="0.01" data-sigma="0"><div class="t">A jump in the curve</div><div class="c">sign · η 0.30 · h 0.01 · σ 0</div>With the sign field the wanted velocity flips between \(+1\) and \(-1\) at \(\theta=0\). The state cannot settle on a jump, so it chatters across it and \(V_k\) stops at a floor instead of going to zero. The quantity responsible has a name: the forcing \(\delta_k=d_{k+1}-d_k\), which for the sign field is \(\pm2\) at every flip no matter how small \(h\) is. Move the step size slider: the residual part of the floor does not vanish as \(h\) shrinks, while the loss part keeps shrinking. This is not the \(O(h)\) band of Theorem 4.1, which needs a Lipschitz field; it is a bounded forcing floor whose size is set by the jump and by \(\eta\).</div>
+      <div class="recipe" data-phi="tanh" data-eta="0.3" data-h="0.01" data-sigma="0.1"><div class="t">A smooth field with noisy gradients</div><div class="c">tanh · η 0.30 · h 0.01 · σ 0.1</div>Now the target itself jitters, because it is computed from a noisy gradient, and \(V_k\) stops decreasing. Read the two tail statistics separately. The residual part is set by the noise and does not shrink with \(h\): a noisy target moves by \(O(\sigma)\) between steps whatever the step size. The loss part does shrink as \(h\) shrinks. This is a mechanism demonstration, not a check of Theorem 4.1: with independent noise the realized \(d_k\) can point uphill at individual steps, which breaks the stepwise alignment assumption, and the paper's deterministic drift bound does not cover a noise term without an \(h\) in front of it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 04 MUON                                                       -->
+<!-- ============================================================ -->
+<section id="muon">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">04</span><h2>Muon as a case study: one knob, one algorithm</h2></div>
+    <p class="sub">Read through the four knobs, Muon changes one relative to Lion: the direction field. Lion's \(\Phi\) is the elementwise sign; Muon's is the matrix sign \(\operatorname{msign}(M)=UV^{\top}\), the polar factor of the momentum matrix. Metric, memory, contraction and weight decay are identical.</p>
+
+    <div class="viz-card">
+      <div class="controls">
+        <div class="ctl"><label><span>\(\sigma_1(M)\)</span><b id="s1-v">2.4</b></label><input type="range" id="s1" min="0.1" max="3" step="0.1" value="2.4"></div>
+        <div class="ctl"><label><span>\(\sigma_2(M)\)</span><b id="s2-v">0.6</b></label><input type="range" id="s2" min="0.1" max="3" step="0.1" value="0.6"></div>
+        <div class="ctl"><label><span>left rotation \(\alpha\) (deg)</span><b id="al-v">60</b></label><input type="range" id="alpha" min="0" max="180" step="1" value="60"></div>
+        <div class="ctl"><label><span>right rotation \(\beta\) (deg)</span><b id="be-v">10</b></label><input type="range" id="beta" min="0" max="180" step="1" value="10"></div>
+      </div>
+      <div class="muon-grid">
+        <div class="pane"><canvas id="c-m0" style="height:220px"></canvas><div class="t">momentum \(M=R_\alpha\operatorname{diag}(\sigma_1,\sigma_2)R_\beta^{\top}\)</div><div class="sv" id="sv-m0"></div></div>
+        <div class="pane"><canvas id="c-m1" style="height:220px"></canvas><div class="t" style="color:var(--lion)">Lion: \(\operatorname{sign}(M)\)</div><div class="sv" id="sv-m1"></div></div>
+        <div class="pane"><canvas id="c-m2" style="height:220px"></canvas><div class="t" style="color:var(--muon)">Muon: \(\operatorname{msign}(M)=R_\alpha R_\beta^{\top}\)</div><div class="sv" id="sv-m2"></div></div>
+      </div>
+      <div class="viz-caption"><span>each panel is the image of the unit circle under the matrix; the half axes are its singular values</span><span>set \(\alpha=\beta=0\): the two fields agree on a diagonal \(M\). Set \(\alpha=35,\ \beta=20\) with the default singular values: Lion's output drops to rank one</span></div>
+    </div>
+
+    <p>Both fields throw away magnitude. Lion throws it away in every coordinate, so each entry becomes \(\pm1\), but the result does not in general equalize the singular values and it depends on the coordinate basis. Muon throws it away in every singular direction, so each singular value becomes \(1\) and the output is an orthogonal matrix (a rotation or a reflection; a partial isometry in the rectangular or rank deficient case), equivariant under orthogonal changes of basis. In the language of Section 02 the two optimizers have different direction geometries: Lion's wanted velocities live at hypercube corners, Muon's at partial isometries, and the target set \(\Lambda\) is the graph of that wanted velocity over the parameter. What the paper says about Lion transfers to Muon unchanged: the analysis remains valid as long as the forcing \(\delta_k\) stays bounded, and Muon's output has Frobenius norm \(\sqrt{\operatorname{rank}M}\) by construction, which bounds \(D_{\max}\). What does not transfer is the \(O(h)\) band of Theorem 4.1: that needs a Lipschitz direction field, and the matrix sign, like the sign, jumps by \(O(1)\) where a singular value crosses zero.</p>
+
+    <h3>Relation to "Muon is a Nuclear Lion King"</h3>
+    <p>Chen, Liu, Liang and Liu show that Muon is Lion with the sign replaced by a subgradient of the nuclear norm, and that the small step ODE in \((X,M)\) decreases a Hamiltonian \(\mathcal H(X,M)=\hat{\mathcal F}(X)+\mathcal D(M,\lambda X)\) built from convex conjugacy. RLF asks a different question with a different state. Its state is \((\theta,v,y)\) with the velocity as an explicit variable to be steered; its Lyapunov function penalizes distance to the target set instead of a conjugate pair; and its analysis is carried out in discrete time with bounded disturbances, so the conclusion is a band of width \(O(h)\) instead of asymptotic convergence of an ODE. <b>The same concrete update, a different extended state, a different Lyapunov function, different guarantees.</b> The two views are complementary. Lion \(\mathcal K\) tells you which direction fields are gradients of a convex potential and what constraint they impose on the weights. RLF tells you how to wrap a direction field, convex potential or not, in a loop with a metric, a memory and a contraction rate, and what certificate the wrapped loop earns, provided the field's forcing stays bounded.</p>
+    <p class="small">Scope note: Muon does not appear in the paper. Its placement here follows Table 7 by substituting the direction field, together with the paper's remark that sign type fields keep the analysis valid as long as the forcing \(\delta_k\) stays bounded.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 05 THE CERTIFICATE                                            -->
+<!-- ============================================================ -->
+<section id="theory">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">05</span><h2>The Lyapunov certificate and what RLF buys you</h2></div>
+    <p class="sub">Two results carry the whole framework. The first derives the loop; the second certifies it. Then the practical question: what can you do with that?</p>
+
+    <div class="payoffs">
+      <div class="payoff">
+        <div>
+          <div class="t"><span class="n">RESULT 1</span>The update rule is derived, not guessed</div>
+          <p>Start from the dynamics alone, a parameter with a velocity and no controller: \(\dot\theta=-v\), \(\nabla_{\dot\theta}v=u\), where \(u\) is the input to be designed. Write the energy as loss gap plus squared residual. Differentiate it along the dynamics and ask which \(u\) makes the derivative negative. Backstepping gives the answer in one line: feed forward the drift of the wanted velocity, feed back the residual. Discretizing the feedback part of that \(u\) with step \(h\) gives the contraction stage of Section 02 with \(\eta=h/\tau\), while the feedforward of the target's drift is carried by recomputing \(d_k\) each step (Section 4.2 of the paper). The familiar momentum update is the output of a design procedure, not its input.</p>
+        </div>
+        <div class="ev"><div class="h">SECTIONS 4.1 AND 4.2 OF THE PAPER</div>
+          $$V=f(\theta)-f^\star+\|z\|_g^2,\qquad z=v-\Phi$$
+          $$u=\nabla_{\dot\theta}\Phi-\tfrac1\tau z$$
+          $$\dot V\le-\big(\mu_\Phi-\tfrac\alpha2\big)\|\operatorname{grad}f\|^2-\big(\tfrac2\tau-\tfrac1{2\alpha}\big)\|z\|^2$$
+          $$\begin{aligned}\text{discrete: }\ v_{k+1}&=(1-\eta)v_k+\eta\,d_k\\ \theta_{k+1}&=R_{\theta_k}(-h\,v_{k+1})\end{aligned}$$
+        </div>
+      </div>
+
+      <div class="payoff">
+        <div>
+          <div class="t"><span class="n">RESULT 2</span>One inequality for every row of the table</div>
+          <p>Theorem 4.1 is a single drift inequality. Its left side is the same energy for SGD, momentum, AdamW or a new combination of knobs; when the chosen parts satisfy its assumptions (descent alignment, bounded and Lipschitz direction field, small enough step), only the three constants change. The gradient term is what you gain by descending, the residual term is what you gain by tracking, and \(C_3h^2\) is the price of a target that moves between steps; stochastic gradients enter the certificate only through that motion, as a bounded disturbance. Under a Polyak Łojasiewicz condition the loss gap is driven into a band of width \(O(h)\). A new combination of knobs inherits the same template; whether the inequality applies is a check of those assumptions, which can be done before training.</p>
+          <p>The direction field enters the band through three constants: its alignment \(\mu_\Phi\), its size \(D_{\max}\), and its smoothness \(L_\delta\), which measures how far the wanted velocity can jump between consecutive steps. Of the three, \(L_\delta\) is the one that separates a smooth field from a discontinuous one, and it enters squared. That is the formal version of what the sign experiment in Section 03 shows.</p>
+        </div>
+        <div class="ev"><div class="h">THEOREM 4.1</div>
+          $$\begin{aligned}V_{k+1}-V_k\le\ &-\tfrac{\mu_\Phi}{2}h_k\|\operatorname{grad}f(\theta_k)\|^2\\&-\tfrac{\eta_k}{8}\|z_k\|^2+C_3h_k^2\end{aligned}$$
+          $$C_3=\Big(L_g+\tfrac{6L_\delta^2}{\eta_k}\Big)D_{\max}^2$$
+          $$\limsup_{k\to\infty}\big(f(\theta_k)-f^\star\big)\le\frac{C_3h_k}{\mu_\Phi\mu_{PL}}$$
+        </div>
+      </div>
+    </div>
+
+    <h3>What the framework buys you</h3>
+    <p>Suppose you grant all of the above. The loop is real, the inequality holds. What can you actually do with it that you could not do before? Three things; the details are in the paper.</p>
+    <div class="buys">
+      <div class="buy"><span class="tag t1">DIAGNOSIS</span><div class="t">You can watch your design choice behave while it trains</div><p>Once the optimizer is a dynamical system, its state carries two instruments: the residual \(z_k=v_k-d_k\), which says whether the velocity is tracking the target, and the energy \(V_k\), which says whether the certificate is being honored. Both can be computed cheaply from what the optimizer already holds, in practice from the stochastic gradient and a probe loss, so the effect of a design choice is visible in the traces during training, not only in the final loss (Section 6.1).</p></div>
+      <div class="buy"><span class="tag t2">PREDICTION</span><div class="t">You get a bound you can design against</div><p>Theorem 4.1 is a quantitative statement: the energy enters a band of width \(C_3h\), and \(C_3\) grows with the square of the forcing constant \(L_\delta\). So "a smoother direction field gives a thinner band, other constants being comparable" is a design rule read off the bound, and the paper checks it by swapping \(\tanh\) for \(\operatorname{sign}\) with everything else fixed (Tables 1 and 9).</p></div>
+      <div class="buy"><span class="tag t3">SEPARATION</span><div class="t">You can change one part and know what you changed</div><p>The four knobs enter the analysis separately, so they can be turned separately. Change only the metric and the other three stay fixed; if the new metric satisfies the assumptions the inequality holds with new constants, and the experiment measures the effect of that one decision. The paper does exactly this for each knob (Section 6.2 and Appendix D). A catalog of whole optimizers cannot express that experiment at all.</p></div>
+    </div>
+    <div class="note"><strong>The guarantee is uniform ultimate boundedness.</strong> With a moving target and a fixed step size, \(V\) is driven into a band whose width is set by the step size and the smoothness of \(\Phi\), and stays there: that is the UUB conclusion of Theorem 4.1, and under the PL condition the loss gap inside the band is \(O(h)\). The residual term \(\|z\|^2\) is what makes \(V\) a certificate for the whole state. With a velocity state the loss alone can rise for several steps while the loop is still converging, which is why momentum methods are not monotone in the loss; the energy with the tracking term is.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PAPER + SHARE                                                 -->
+<!-- ============================================================ -->
+<section id="paper">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">06</span><h2>The paper</h2></div>
+    <p><em>Riemannian Lyapunov Framework: Optimization as Closed Loop Control on Riemannian Manifolds.</em> Yixuan Wang, Omkar Sudhir Patil, Warren E. Dixon. NeurIPS 2026.</p>
+    <p><a href="https://arxiv.org/abs/2601.22284v2" target="_blank" rel="noopener">arxiv.org/abs/2601.22284</a></p>
+
+    <div class="share">
+      <h3>Share this</h3>
+      <p>Copy ready text for X or LinkedIn.</p>
+      <div class="snippet" id="snippet">Stop discovering optimizers. Start designing them.
+
+SGD, Adam, Lion, Muon: each one measures a gradient, decides an update, applies it, measures again. That is a feedback controller, and control theory has had design and certification tools for that object for seventy years.
+
+The language we use for optimizers today ("uses momentum", "takes the sign") is descriptive. Control gives a generative one: state the specification, run a construction procedure, get the controller.
+
+Our NeurIPS 2026 paper (Riemannian Lyapunov Framework) does that for optimizers. One loop, four swappable parts:
+  Ψ  memory: what is carried between steps
+  Φ  direction field: the velocity the controller wants
+  η  contraction: how fast the real velocity is pulled to it (momentum is η<1)
+  g  metric: how lengths are measured when the step is taken
+
+SGD, AdamW and Lion are rows of one table in the paper; Muon slots in by changing Φ alone, elementwise sign to matrix sign.
+
+The update rule is the output of backstepping, not an input. One Lyapunov inequality covers every row whose parts satisfy its assumptions; only the constants change.
+
+What it buys you: a residual you can log mid training, a bound you can design against (smoother field, thinner band), and composition (Muon's direction with AdamW's metric is one line, and the same inequality covers it).
+
+Blog: nomushroomw.github.io/blog/rlf/
+Paper: arxiv.org/abs/2601.22284</div>
+      <div class="row">
+        <button onclick="copySnippet(event)">Copy snippet</button>
+        <button onclick="shareX()" style="background:#ede9fe;">Share on X</button>
+        <button onclick="shareLinkedIn()" style="background:#e8f7ef;">Share on LinkedIn</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Optimizers as closed loop control.</p>
+    <div class="cite">@inproceedings{wang2026rlf,
+  title     = {Riemannian Lyapunov Framework: Optimization as Closed Loop Control on Riemannian Manifolds},
+  author    = {Wang, Yixuan and Patil, Omkar Sudhir and Dixon, Warren E.},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
+}</div>
+  </div>
+</footer>
+
+<script>
+function makeCtx(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+function onVisible(el, start, stop) {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) start(); else if (stop) stop(); });
+  }, { threshold: 0.15 });
+  io.observe(el);
+}
+function tex(el, s, display) {
+  if (window.katex) el.innerHTML = katex.renderToString(s, { throwOnError: false, displayMode: !!display });
+  else el.textContent = s;
+}
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const CSS = getComputedStyle(document.documentElement);
+const COL = (n) => CSS.getPropertyValue(n).trim();
+
+/* ---------------- 02 loop ---------------- */
+const OPTS = [
+  { key: 'sgd', gTex: 'I', label: 'SGD', color: '--sgd', hot: [], liftTex: '1',
+    plant: '\\begin{aligned}\\theta\\in\\mathbb R^n\\\\g=I\\end{aligned}', memory: '\\varnothing', target: 'd_k=\\hat g_k', lift: 'v_{k+1}=d_k', metric: '\\begin{aligned}\\theta_{k+1}=\\theta_k\\\\\\quad-h\\,v_{k+1}\\end{aligned}',
+    pm: 'remembers nothing', pt: 'wants the raw gradient', pl: 'adopts it immediately, η = 1', pg: 'plain Euclidean step',
+    lam: '\\text{graph of }\\operatorname{grad}f',
+    diff: 'changes nothing', note: '<b>SGD.</b> No memory, the raw gradient as the wanted velocity, adopted at once, Euclidean step. Every other row is obtained by turning one or more knobs away from this one.' },
+  { key: 'mom', gTex: 'I', label: 'Momentum', color: '--mom', hot: ['lift'], liftTex: '\\eta\\in(0,1)',
+    plant: '\\begin{aligned}\\theta\\in\\mathbb R^n\\\\g=I\\end{aligned}', memory: 'v_k', target: 'd_k=\\hat g_k', lift: '\\begin{aligned}v_{k+1}=\\ &(1-\\eta)v_k\\\\&+\\eta\\,\\hat g_k\\end{aligned}', metric: '\\begin{aligned}\\theta_{k+1}=\\theta_k\\\\\\quad-h\\,v_{k+1}\\end{aligned}',
+    pm: 'remembers its own velocity', pt: 'still wants the raw gradient', pl: 'relaxes toward it, η = 1 − β', pg: 'plain Euclidean step',
+    lam: '\\text{graph of }\\operatorname{grad}f',
+    diff: 'changes η only', note: '<b>Heavy ball momentum.</b> The wanted velocity is still the gradient. The only change is \\(\\eta<1\\): the real velocity is relaxed toward the wanted one instead of snapped to it, and that relaxation is the exponential moving average that momentum computes, up to a rescaling of the step size.' },
+  { key: 'adamw', gTex: '\\operatorname{diag}(\\sqrt{\\hat s_k}+\\epsilon)', label: 'AdamW', color: '--adam', hot: ['memory', 'lift', 'metric'], liftTex: '\\eta=1-\\beta_1',
+    plant: '\\begin{aligned}\\theta\\in\\mathbb R^n\\\\g_k=A_k^{-1}\\end{aligned}', memory: 'm_k,\\ s_k', target: 'd_k=\\hat g_k', lift: '\\begin{aligned}m_{k+1}=\\ &(1-\\eta)m_k\\\\&+\\eta\\,\\hat g_k\\end{aligned}', metric: '\\begin{aligned}\\theta_{k+1}=\\ &\\theta_k-h\\,A_k\\hat m_{k+1}\\\\&-h\\lambda\\theta_k\\end{aligned}',
+    pm: 'first and second moments', pt: 'wants the raw gradient', pl: 'the first moment is the velocity, η = 1 − β₁', pg: 'A_k = diag(√ŝ_k + ε)⁻¹, so g_k = A_k⁻¹ stretches lengths per coordinate; plus decay',
+    lam: '\\text{preconditioned momentum}',
+    diff: 'changes Ψ, η, g', note: '<b>AdamW.</b> The first moment \\(m\\) is the velocity itself, relaxed at rate \\(1-\\beta_1\\). The second moment \\(s\\) never touches the direction: it defines the preconditioner \\(A_k=\\operatorname{diag}(\\sqrt{\\hat s_k}+\\epsilon)^{-1}\\), that is the metric \\(g_k=A_k^{-1}=\\operatorname{diag}(\\sqrt{\\hat s_k}+\\epsilon)\\), and the step is steepest descent in that metric (Proposition B.1 of the paper). Here \\(\\eta\\) is tied to \\(\\beta_1\\), so this row really exercises three knobs. Decoupled weight decay is a term in the step.' },
+  { key: 'lion', gTex: 'I', label: 'Lion', color: '--lion', hot: ['memory', 'target'], liftTex: '1',
+    plant: '\\begin{aligned}\\theta\\in\\mathbb R^n\\\\g=I\\end{aligned}', memory: 'm_k', target: '\\begin{aligned}d_k=\\operatorname{sign}(c_k)\\\\c_k=\\beta_1 m_k+(1-\\beta_1)\\hat g_k\\end{aligned}', lift: 'v_{k+1}=d_k', metric: '\\begin{aligned}\\theta_{k+1}=\\theta_k\\\\\\ -h\\,(v_{k+1}+\\lambda\\theta_k)\\end{aligned}',
+    pm: 'a momentum buffer', pt: 'wants the sign of an interpolated momentum', pl: 'adopts it immediately, η = 1', pg: 'Euclidean step plus decay',
+    lam: '\\text{hypercube corners }\\{\\pm1\\}^n',
+    diff: 'changes Ψ, Φ', note: '<b>Lion.</b> Memory and a nonlinear direction field. The wanted velocity is the sign of an interpolated momentum, so the target set is no longer a smooth graph but the set of hypercube corners. The certificate survives as long as the forcing \\(\\delta_k\\) stays bounded, which is what normalization and a small step buy.' },
+  { key: 'muon', gTex: 'I', label: 'Muon', color: '--muon', hot: ['memory', 'target'], liftTex: '1',
+    plant: '\\begin{aligned}\\Theta\\in\\mathbb R^{n\\times m}\\\\g=I\\end{aligned}', memory: 'M_k', target: '\\begin{aligned}D_k=\\operatorname{msign}(C_k)=U_kV_k^{\\top}\\\\C_k=\\beta_1 M_k+(1-\\beta_1)\\hat G_k\\end{aligned}', lift: 'V_{k+1}=D_k', metric: '\\begin{aligned}\\Theta_{k+1}=\\Theta_k\\\\\\ -h\\,(V_{k+1}+\\lambda\\Theta_k)\\end{aligned}',
+    pm: 'a momentum matrix', pt: 'wants the polar factor of the momentum', pl: 'adopts it immediately, η = 1', pg: 'Euclidean step plus decay',
+    lam: '\\text{partial isometries }\\{UV^{\\top}\\}',
+    diff: 'changes Φ relative to Lion', note: '<b>Muon.</b> Identical to Lion in every stage except the direction field, where the elementwise sign becomes the matrix sign (the polar factor, computed by Newton Schulz iteration). The target set becomes the set of partial isometries. Section 04 shows what that one change does to a single momentum matrix.' },
+  { key: 'rlo', gTex: 'I', label: 'RLO-Λ (ours)', color: '--rlo', hot: ['memory', 'target'], liftTex: '1',
+    plant: '\\begin{aligned}\\theta\\in\\mathbb R^n\\\\g=I\\end{aligned}', memory: 'm_k,\\ s_k', target: '\\begin{aligned}d_k=\\operatorname{ScaleTo}_{\\sqrt D}(\\tilde d_k)\\\\\\tilde d_k=\\tfrac{\\tanh(\\gamma c_k)}{\\sqrt{s_{k+1}+\\epsilon}}\\end{aligned}', lift: 'v_{k+1}=d_k', metric: '\\begin{aligned}\\theta_{k+1}=\\theta_k\\\\\\ -h\\,(v_{k+1}+\\lambda\\theta_k)\\end{aligned}',
+    pm: 'first and second moments', pt: 'wants a smooth saturation, curvature folded in', pl: 'adopts it immediately, η = 1', pg: 'Euclidean step plus decay',
+    lam: '\\text{smooth saturation}',
+    diff: 'changes Ψ, Φ', note: '<b>RLO-Λ.</b> One of the paper’s synthesized instances (Algorithm 3). A smooth bounded field \\(\\tanh(\\gamma c_k)\\) replaces the sign, divided by the second moment so that curvature is folded into the shape of the target set instead of into the metric. The \\(\\tanh\\) core is Lipschitz, which is what the paper\u2019s mechanism diagnostics exercise with the global normalization switched off; with normalization on, the full map is bounded but not globally Lipschitz.' }
+];
+(function loopDiagram() {
+  const chips = document.getElementById('opt-chips');
+  const blocks = { plant: 'blk-plant', memory: 'blk-memory', target: 'blk-target', lift: 'blk-lift', metric: 'blk-metric' };
+  OPTS.forEach((o) => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = o.label; b.dataset.key = o.key;
+    b.addEventListener('click', () => select(o.key));
+    chips.appendChild(b);
+  });
+  let current = null;
+  function select(key) {
+    current = key;
+    const o = OPTS.find(x => x.key === key);
+    const c = COL(o.color);
+    chips.querySelectorAll('.chip').forEach(ch => {
+      const on = ch.dataset.key === key;
+      ch.classList.toggle('active', on);
+      ch.style.background = on ? c : ''; ch.style.borderColor = on ? c : '';
+    });
+    Object.keys(blocks).forEach(k => {
+      const el = document.getElementById(blocks[k]);
+      el.classList.toggle('hot', o.hot.includes(k));
+      el.style.setProperty('--hot', c);
+      el.style.setProperty('--hot-bg', c + '22');
+    });
+    tex(document.getElementById('f-plant'), o.plant, true);
+    tex(document.getElementById('f-memory'), o.memory, true);
+    tex(document.getElementById('f-target'), o.target, true);
+    tex(document.getElementById('f-lift'), o.lift, true);
+    tex(document.getElementById('f-metric'), o.metric, true);
+    document.getElementById('p-memory').textContent = o.pm;
+    document.getElementById('p-target').textContent = o.pt;
+    document.getElementById('p-lift').textContent = o.pl;
+    document.getElementById('p-metric').textContent = o.pg;
+    const note = document.getElementById('loop-note');
+    note.innerHTML = '<span class="diff" style="background:' + c + '">' + o.diff + '</span>' + o.note;
+    if (window.renderMathInElement) renderMathInElement(note, { delimiters: [{ left: '\\(', right: '\\)', display: false }] });
+  }
+  const tb = document.querySelector('#opt-table tbody');
+  OPTS.forEach(o => {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td'); name.className = 'name';
+    name.innerHTML = '<span class="sw" style="background:var(' + o.color + ')"></span>' + o.label;
+    tr.appendChild(name);
+    [o.gTex, o.memory, o.target, o.liftTex, o.lam].forEach(s => {
+      const d = document.createElement('td'); d.dataset.tex = s; tr.appendChild(d);
+    });
+    tb.appendChild(tr);
+  });
+  window.__renderTable = () => tb.querySelectorAll('td[data-tex]').forEach(d => tex(d, d.dataset.tex.split('\\begin{aligned}').join('\\begin{array}{l}').split('\\end{aligned}').join('\\end{array}')));
+  window.__selectDefault = () => select('muon');
+  window.addEventListener('themechange', () => { if (current) select(current); });
+})();
+
+/* ---------------- 03 phase simulation ---------------- */
+(function phaseSim() {
+  const cP = document.getElementById('c-phase'), cL = document.getElementById('c-lyap');
+  let envP, envL, running = false, t0 = null;
+  let N = 400; const ANIM_MS = 11200, HOLD_MS = 1800;
+  const stepMs = () => ANIM_MS / N;
+  const state = { phi: 'tanh', eta: 0.30, h: 0.01, sigma: 0 };
+  const GAMMA = 5;
+  const PHI = { grad: (g) => g, tanh: (g) => Math.tanh(GAMMA * g), sign: (g) => (g > 0 ? 1 : (g < 0 ? -1 : 0)) };
+  let traj = [], tail = {};
+  function simulate() {
+    const rng = mulberry32(7);
+    const Phi = PHI[state.phi];
+    N = Math.max(400, Math.min(4000, Math.round(4 / state.h / 100) * 100));
+    const tw = document.getElementById('tail-win'); if (tw) tw.textContent = 'tail = last half of ' + N + ' steps';
+    let th = 1.6, v = 0.15;
+    traj = [];
+    for (let k = 0; k <= N; k++) {
+      const ghat = th + state.sigma * (2 * rng() - 1);
+      const d = Phi(ghat), z = v - d, loss = 0.5 * th * th;
+      traj.push({ th, v, d, z, loss, V: loss + z * z });
+      v = (1 - state.eta) * v + state.eta * d;
+      th = th - state.h * v;
+      if (!isFinite(th) || Math.abs(th) > 50) th = Math.sign(th) * 50;
+    }
+    const half = traj.slice(Math.floor(N / 2));
+    tail = { z: half.reduce((a, p) => a + p.z * p.z, 0) / half.length, V: half.reduce((a, p) => a + p.V, 0) / half.length, loss: half.reduce((a, p) => a + p.loss, 0) / half.length };
+    document.getElementById('st-z').textContent = fmt(tail.z);
+    document.getElementById('st-V').textContent = fmt(tail.V);
+    document.getElementById('st-loss').textContent = fmt(tail.loss);
+  }
+  function fmt(x) { if (x === 0) return '0'; if (x < 1e-3) return x.toExponential(1); return x.toFixed(3); }
+  function resize() { envP = makeCtx(cP); envL = makeCtx(cL); }
+  const TH_MIN = -0.9, TH_MAX = 2.0, V_MIN = -1.6, V_MAX = 1.6;
+  const MONO = 'JetBrains Mono, Menlo, monospace';
+  function drawPhase(idx) {
+    const { ctx, w, h } = envP;
+    ctx.clearRect(0, 0, w, h);
+    const padL = 48, padR = 16, padT = 22, padB = 38;
+    const pw = w - padL - padR, ph = h - padT - padB;
+    const X = (t) => padL + (t - TH_MIN) / (TH_MAX - TH_MIN) * pw;
+    const Y = (vv) => padT + ph * (1 - (vv - V_MIN) / (V_MAX - V_MIN));
+    const Phi = PHI[state.phi];
+    ctx.strokeStyle = COL('--cv-grid'); ctx.lineWidth = 1;
+    for (let t = -0.5; t <= 2.0; t += 0.5) { ctx.beginPath(); ctx.moveTo(X(t), padT); ctx.lineTo(X(t), padT + ph); ctx.stroke(); }
+    for (let vv = -1.5; vv <= 1.5; vv += 0.5) { ctx.beginPath(); ctx.moveTo(padL, Y(vv)); ctx.lineTo(padL + pw, Y(vv)); ctx.stroke(); }
+    ctx.strokeStyle = COL('--cv-axis');
+    ctx.beginPath(); ctx.moveTo(X(0), padT); ctx.lineTo(X(0), padT + ph); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(padL + pw, Y(0)); ctx.stroke();
+    ctx.font = '10.5px ' + MONO; ctx.fillStyle = COL('--cv-tick');
+    for (let t = -0.5; t <= 2.0; t += 0.5) ctx.fillText(t.toFixed(1), X(t) - 9, padT + ph + 14);
+    for (let vv = -1.5; vv <= 1.5; vv += 0.5) ctx.fillText(vv.toFixed(1), 12, Y(vv) + 3);
+    ctx.font = '600 11.5px ' + MONO; ctx.fillStyle = COL('--cv-title');
+    ctx.fillText('position θ', padL + pw - 70, padT + ph + 30);
+    ctx.fillText('velocity v', 12, padT - 7);
+    ctx.strokeStyle = COL('--cv-curve'); ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); let first = true;
+    for (let t = TH_MIN; t <= TH_MAX; t += 0.005) {
+      const vv = Math.max(V_MIN, Math.min(V_MAX, Phi(t)));
+      if (first) { ctx.moveTo(X(t), Y(vv)); first = false; } else ctx.lineTo(X(t), Y(vv));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = '600 11.5px ' + MONO; ctx.fillStyle = COL('--cv-curve');
+    const lt = 0.6; ctx.fillText('Λ: wanted velocity Φ(θ)', X(lt), Y(Math.min(V_MAX, Phi(lt))) - 12);
+    ctx.strokeStyle = COL('--rlo'); ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(X(0), Y(0), 6, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = COL('--rlo'); ctx.beginPath(); ctx.arc(X(0), Y(0), 2.4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '600 10.5px ' + MONO; ctx.fillStyle = COL('--rlo');
+    ctx.fillText('minimizer θ* = 0', X(0) + 9, Y(0) + 18);
+    ctx.strokeStyle = COL('--cv-start'); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(X(traj[0].th), Y(traj[0].v), 4.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = COL('--cv-start'); ctx.font = '600 10.5px ' + MONO;
+    ctx.fillText('start', X(traj[0].th) + 8, Y(traj[0].v) + 4);
+    const n = Math.min(idx, traj.length - 1);
+    ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (let i = 1; i <= n; i++) {
+      const a = traj[i - 1], b = traj[i];
+      ctx.strokeStyle = Math.abs(b.z) > 0.12 ? COL('--adam') : COL('--rlo');
+      ctx.beginPath();
+      ctx.moveTo(X(a.th), Y(Math.max(V_MIN, Math.min(V_MAX, a.v))));
+      ctx.lineTo(X(b.th), Y(Math.max(V_MIN, Math.min(V_MAX, b.v))));
+      ctx.stroke();
+    }
+    const p = traj[n];
+    const vy = Math.max(V_MIN, Math.min(V_MAX, p.v)), ty = Math.max(V_MIN, Math.min(V_MAX, p.d));
+    if (Math.abs(p.z) > 0.01) {
+      ctx.strokeStyle = COL('--red'); ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(X(p.th), Y(vy)); ctx.lineTo(X(p.th), Y(ty)); ctx.stroke();
+      if (Math.abs(p.z) > 0.08) {
+        ctx.font = '600 10.5px ' + MONO;
+        const label = 'residual z = ' + p.z.toFixed(2);
+        const tw = ctx.measureText(label).width;
+        const lx = X(p.th) + 8, ly = (Y(vy) + Y(ty)) / 2 + 4;
+        ctx.fillStyle = COL('--cv-labelbg'); ctx.fillRect(lx - 3, ly - 11, tw + 6, 14);
+        ctx.fillStyle = COL('--red'); ctx.fillText(label, lx, ly);
+      }
+    }
+    ctx.fillStyle = Math.abs(p.z) > 0.12 ? COL('--adam') : COL('--rlo');
+    ctx.beginPath(); ctx.arc(X(p.th), Y(vy), 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = COL('--panel'); ctx.lineWidth = 2; ctx.stroke();
+    const phase = n === 0 ? '' : (Math.abs(p.z) > 0.12 ? 'FAST PHASE: matching the wanted velocity' : (p.loss > 1e-3 ? 'SLOW PHASE: riding the curve to the minimizer' : 'SMALL RESIDUAL, NEAR THE MINIMIZER'));
+    ctx.font = '600 11px ' + MONO; ctx.fillStyle = Math.abs(p.z) > 0.12 ? COL('--adam') : COL('--rlo');
+    ctx.font = '600 10.5px ' + MONO; ctx.fillText(phase, padL + pw - 10 - ctx.measureText(phase).width, padT - 7);
+    document.getElementById('st-k').textContent = n;
+  }
+  function drawLyap(idx) {
+    const { ctx, w, h } = envL;
+    ctx.clearRect(0, 0, w, h);
+    const padL = 46, padR = 14, padT = 22, padB = 38;
+    const pw = w - padL - padR, ph = h - padT - padB;
+    const LMIN = -8, LMAX = 1;
+    const X = (k) => padL + k / N * pw;
+    const Y = (val) => { const lv = Math.max(LMIN, Math.min(LMAX, Math.log10(Math.max(val, 1e-12)))); return padT + ph * (1 - (lv - LMIN) / (LMAX - LMIN)); };
+    ctx.strokeStyle = COL('--cv-grid'); ctx.lineWidth = 1; ctx.font = '10.5px ' + MONO;
+    for (let e = LMIN; e <= LMAX; e++) {
+      const y = Y(Math.pow(10, e));
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + pw, y); ctx.stroke();
+      ctx.fillStyle = COL('--cv-tick'); ctx.fillText('1e' + e, 8, y + 3);
+    }
+    ctx.strokeStyle = COL('--cv-axis');
+    ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ph); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padL, padT + ph); ctx.lineTo(padL + pw, padT + ph); ctx.stroke();
+    for (let k = 0; k <= N; k += N / 4) { ctx.fillStyle = COL('--cv-tick'); ctx.fillText(String(k), X(k) - 8, padT + ph + 14); }
+    ctx.font = '600 11.5px ' + MONO; ctx.fillStyle = COL('--cv-title');
+    ctx.fillText('step k', padL + pw - 44, padT + ph + 30);
+    ctx.fillText('energy V (log)', padL + 6, padT - 7);
+    if (tail.V > 0) {
+      ctx.strokeStyle = 'rgba(201,143,18,0.7)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(padL, Y(tail.V)); ctx.lineTo(padL + pw, Y(tail.V)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(201,143,18,1)'; ctx.font = '600 10.5px ' + MONO;
+      ctx.fillText('tail mean V (window)', padL + pw - 134, Y(tail.V) - 5);
+    }
+    const n = Math.min(idx, traj.length - 1);
+    const curve = (get, color, width) => {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) { const x = X(i), y = Y(get(traj[i])); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      ctx.stroke();
+    };
+    curve(p => p.loss, COL('--cv-loss'), 1.4);
+    curve(p => p.z * p.z, COL('--red'), 1.6);
+    curve(p => p.V, COL('--cv-curve'), 2.2);
+  }
+  function frame(now) {
+    if (!running) return;
+    if (t0 === null) t0 = now;
+    const total = ANIM_MS + HOLD_MS;
+    const ph = (now - t0) % total;
+    const idx = ph < ANIM_MS ? Math.floor(ph / stepMs()) : N;
+    drawPhase(idx); drawLyap(idx);
+    requestAnimationFrame(frame);
+  }
+  function restart() { simulate(); t0 = null; if (!running) { drawPhase(N); drawLyap(N); } }
+  const etaIn = document.getElementById('eta'), hIn = document.getElementById('hstep'), sigIn = document.getElementById('sigma');
+  function syncLabels() {
+    document.getElementById('eta-v').textContent = state.eta.toFixed(2);
+    document.getElementById('h-v').textContent = state.h.toFixed(3);
+    const hb = document.getElementById('h-bound');
+    if (state.phi === 'sign') { hb.textContent = 'sign has no Lipschitz constant: Theorem 4.1 does not apply'; hb.classList.add('out'); }
+    else {
+      const Ld = state.phi === 'tanh' ? GAMMA : 1, mu = state.phi === 'tanh' ? Math.tanh(GAMMA * 1.6) / 1.6 : 1, e = state.eta;
+      const b = Math.min(Math.sqrt(e / 16), e / (Math.sqrt(24) * Ld), e < 1 ? e * mu / (8 * (1 - e)) : Infinity);
+      const ok = state.h <= b;
+      hb.textContent = (ok ? 'inside' : 'outside') + ' the theorem\u2019s step size range, h \u2264 ' + b.toFixed(4);
+      hb.classList.toggle('out', !ok);
+    }
+    document.getElementById('sig-v').textContent = state.sigma.toFixed(2);
+    document.querySelectorAll('#phi-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === state.phi));
+    etaIn.value = state.eta; hIn.value = state.h; sigIn.value = state.sigma;
+  }
+  etaIn.addEventListener('input', () => { state.eta = parseFloat(etaIn.value); syncLabels(); restart(); });
+  hIn.addEventListener('input', () => { state.h = parseFloat(hIn.value); syncLabels(); restart(); });
+  sigIn.addEventListener('input', () => { state.sigma = parseFloat(sigIn.value); syncLabels(); restart(); });
+  document.querySelectorAll('#phi-seg button').forEach(b => b.addEventListener('click', () => { state.phi = b.dataset.v; syncLabels(); restart(); }));
+  document.getElementById('replay').addEventListener('click', () => { t0 = null; });
+  document.getElementById('reset').addEventListener('click', () => { Object.assign(state, { phi: 'tanh', eta: 0.30, h: 0.01, sigma: 0 }); syncLabels(); restart(); });
+  document.querySelectorAll('.recipe').forEach(r => r.addEventListener('click', () => {
+    Object.assign(state, { phi: r.dataset.phi, eta: parseFloat(r.dataset.eta), h: parseFloat(r.dataset.h), sigma: parseFloat(r.dataset.sigma) });
+    syncLabels(); restart();
+    document.getElementById('c-phase').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }));
+  resize(); syncLabels(); simulate(); drawPhase(0); drawLyap(0);
+  window.addEventListener('resize', () => { resize(); drawPhase(N); drawLyap(N); });
+  onVisible(cP, () => { if (!running) { running = true; t0 = null; requestAnimationFrame(frame); } }, () => { running = false; });
+  window.addEventListener('themechange', () => { if (!running) { drawPhase(N); drawLyap(N); } });
+})();
+
+/* ---------------- 05 muon ---------------- */
+(function muonDemo() {
+  const cv = ['c-m0', 'c-m1', 'c-m2'].map(id => document.getElementById(id));
+  const sv = ['sv-m0', 'sv-m1', 'sv-m2'].map(id => document.getElementById(id));
+  let envs;
+  function resize() { envs = cv.map(makeCtx); }
+  const rot = (a) => { const c = Math.cos(a), s = Math.sin(a); return [[c, -s], [s, c]]; };
+  const mul = (A, B) => [[A[0][0]*B[0][0]+A[0][1]*B[1][0], A[0][0]*B[0][1]+A[0][1]*B[1][1]], [A[1][0]*B[0][0]+A[1][1]*B[1][0], A[1][0]*B[0][1]+A[1][1]*B[1][1]]];
+  const T = (A) => [[A[0][0], A[1][0]], [A[0][1], A[1][1]]];
+  const sgn = (x) => (x > 0 ? 1 : (x < 0 ? -1 : 0));
+  function singular(A) {
+    const a = A[0][0]*A[0][0] + A[1][0]*A[1][0], b = A[0][0]*A[0][1] + A[1][0]*A[1][1], c = A[0][1]*A[0][1] + A[1][1]*A[1][1];
+    const m = (a + c) / 2, r = Math.sqrt(((a - c) / 2) ** 2 + b * b);
+    return [Math.sqrt(Math.max(m + r, 0)), Math.sqrt(Math.max(m - r, 0))];
+  }
+  function drawPane(env, A, color, scaleMax) {
+    const { ctx, w, h } = env;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 14, S = R / scaleMax;
+    ctx.strokeStyle = COL('--cv-grid2'); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+    ctx.strokeStyle = COL('--cv-axis2'); ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.arc(cx, cy, S, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = color + '22'; ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (let i = 0; i <= 96; i++) {
+      const t = i / 96 * Math.PI * 2, x = Math.cos(t), y = Math.sin(t);
+      const px = A[0][0] * x + A[0][1] * y, py = A[1][0] * x + A[1][1] * y;
+      if (i === 0) ctx.moveTo(cx + S * px, cy - S * py); else ctx.lineTo(cx + S * px, cy - S * py);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const ex = A[0][0], ey = A[1][0];
+    ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + S * ex, cy - S * ey); ctx.stroke();
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx + S * ex, cy - S * ey, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+  function update() {
+    const s1 = parseFloat(document.getElementById('s1').value), s2 = parseFloat(document.getElementById('s2').value);
+    const al = parseFloat(document.getElementById('alpha').value) * Math.PI / 180, be = parseFloat(document.getElementById('beta').value) * Math.PI / 180;
+    document.getElementById('s1-v').textContent = s1.toFixed(1); document.getElementById('s2-v').textContent = s2.toFixed(1);
+    document.getElementById('al-v').textContent = Math.round(al * 180 / Math.PI); document.getElementById('be-v').textContent = Math.round(be * 180 / Math.PI);
+    const M = mul(mul(rot(al), [[s1, 0], [0, s2]]), T(rot(be)));
+    const Sg = [[sgn(M[0][0]), sgn(M[0][1])], [sgn(M[1][0]), sgn(M[1][1])]];
+    const Ms = mul(rot(al), T(rot(be)));
+    const mats = [M, Sg, Ms], cols = [COL('--cv-matrix'), COL('--lion'), COL('--muon')];
+    const scaleMax = Math.max(3, s1, 2.05);
+    mats.forEach((A, i) => {
+      drawPane(envs[i], A, cols[i], scaleMax);
+      const s = singular(A);
+      sv[i].textContent = 'σ = (' + s[0].toFixed(2) + ', ' + s[1].toFixed(2) + ')   ‖·‖F = ' + Math.sqrt(s[0]*s[0] + s[1]*s[1]).toFixed(2);
+    });
+  }
+  ['s1', 's2', 'alpha', 'beta'].forEach(id => document.getElementById(id).addEventListener('input', update));
+  resize(); update();
+  window.addEventListener('resize', () => { resize(); update(); });
+  window.addEventListener('themechange', update);
+})();
+
+(function themeToggle() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  const syncLabel = () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  };
+  syncLabel();
+  btn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    syncLabel();
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const boot = () => {
+    if (!window.renderMathInElement) { setTimeout(boot, 60); return; }
+    renderMathInElement(document.body, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false });
+    window.__renderTable(); window.__selectDefault();
+  };
+  boot();
+});
+
+function copySnippet(e) {
+  const text = document.getElementById('snippet').innerText;
+  navigator.clipboard.writeText(text).then(() => { const btn = e.target, old = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = old, 1500); });
+}
+const PAGE_URL = 'https://nomushroomw.github.io/blog/rlf/';
+function shareX() {
+  const t = encodeURIComponent("Stop discovering optimizers. Start designing them. Every optimizer is a feedback controller; our NeurIPS 2026 paper writes SGD, AdamW and Lion as one loop with four swappable parts, with a Lyapunov certificate for every choice that meets its assumptions; Muon slots in by changing one part: " + PAGE_URL);
+  window.open('https://twitter.com/intent/tweet?text=' + t, '_blank');
+}
+function shareLinkedIn() { window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(PAGE_URL), '_blank'); }
+</script>
+</body>
+</html>

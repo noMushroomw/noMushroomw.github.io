@@ -237,11 +237,17 @@
   footer a { color: var(--text-muted); }
 
   /* Responsive */
-  @media (max-width: 640px) {
+  /* The full nav needs ~730px; below that keep only the nav-keep links */
+  @media (max-width: 760px) {
+    .brand { white-space: nowrap; }
     .nav { gap: 16px; }
     .nav a { display: none; }
     .nav a.nav-keep { display: inline-block; }
     .nav .nav-menu-list a { display: flex; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px; }
+    .nav { gap: 12px; }
     .intro { flex-direction: column; text-align: center; gap: 20px; padding-top: 40px; }
     .links { justify-content: center; }
     .intro-text h1 { font-size: 1.85rem; }
@@ -249,6 +255,13 @@
     .news-date { width: auto; }
     .pub { flex-direction: column; gap: 12px; }
     .pub-thumb { width: 200px; }
+  }
+  @media (max-width: 380px) {
+    .brand { font-size: 1rem; }
+    .nav { gap: 10px; }
+  }
+  @media (max-width: 355px) {
+    .brand { white-space: normal; line-height: 1.15; }
   }
 </style>
 
@@ -269,6 +282,7 @@
             <a href="files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">Academic CV <span class="fmt">HTML</span></a>
           </div>
         </details>
+        <a class="nav-keep" href="blog/">Blog</a>
         <a href="snake.html">Fun Stuffs</a>
         <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -388,6 +402,7 @@
             <div class="pub-links">
               <a class="pub-link" href="https://arxiv.org/abs/2601.22284v2" target="_blank" rel="noopener">Paper</a>
               <a class="pub-link" href="https://github.com/noMushroomw/NAIM" target="_blank" rel="noopener">Code</a>
+              <a class="pub-link" href="blog/rlf/">Blog</a>
             </div>
           </div>
         </li>

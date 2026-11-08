@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<!--
+  Yixuan Wang — blog index
+  Each post lives in its own folder: blog/<slug>/index.html  (served at /blog/<slug>/)
+  To add a post: create the folder, then copy one <li class="post"> block below and edit it.
+  Newest post first.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog · Yixuan Wang</title>
+<meta name="description" content="Blog posts by Yixuan Wang on machine learning, optimization, and control.">
+<meta name="theme-color" content="#ffffff">
+
+<!-- Same theme logic as the homepage: a saved choice wins; otherwise follow the OS. -->
+<script>
+(function () {
+  function osPrefersDark() {
+    try { return window.matchMedia('(prefers-color-scheme: dark)').matches; }
+    catch (e) { return false; }
+  }
+  var theme;
+  try {
+    var t = localStorage.getItem('theme');
+    theme = (t === 'dark' || t === 'light') ? t : (osPrefersDark() ? 'dark' : 'light');
+  } catch (e) {
+    theme = osPrefersDark() ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<style>
+  :root {
+    --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+    --bg: #ffffff;
+    --bg-elevated: rgba(255,255,255,0.82);
+    --text: #1c1c1e;
+    --text-muted: #5f6672;
+    --text-faint: #9aa0a9;
+    --border: #e9e9ee;
+    --accent: #2b5fd9;
+    --accent-hover: #1e49bf;
+    --chip-bg: #f3f5f9;
+    --chip-text: #475067;
+  }
+  [data-theme="dark"] {
+    --bg: #060608;
+    --bg-elevated: rgba(10,10,13,0.82);
+    --text: #e7e7ea;
+    --text-muted: #9a9aa3;
+    --text-faint: #6a6a73;
+    --border: #1d1d23;
+    --accent: #74a2ff;
+    --accent-hover: #97baff;
+    --chip-bg: #14141a;
+    --chip-text: #b7bcc8;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header (same as the homepage) */
+  .site-header {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .brand { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; color: var(--text); letter-spacing: .5px; }
+  .brand:hover { text-decoration: none; color: var(--text); }
+  .nav { display: flex; align-items: center; gap: 22px; }
+  .nav a { color: var(--text-muted); font-size: .92rem; }
+  .nav a:hover { color: var(--accent); text-decoration: none; }
+  .nav a.current { color: var(--text); }
+
+  .nav-menu { position: relative; }
+  .nav-menu summary {
+    list-style: none; cursor: pointer; user-select: none;
+    color: var(--text-muted); font-size: .92rem;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .nav-menu summary::-webkit-details-marker { display: none; }
+  .nav-menu summary::after {
+    content: ""; width: 6px; height: 6px; margin-top: -3px;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg); transition: transform .15s ease;
+  }
+  .nav-menu[open] summary::after { transform: rotate(-135deg); margin-top: 3px; }
+  .nav-menu summary:hover, .nav-menu[open] summary { color: var(--accent); }
+  .nav-menu-list {
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 30;
+    min-width: 210px; padding: 6px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  }
+  .nav .nav-menu-list a {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 10px; border-radius: 7px; color: var(--text); white-space: nowrap;
+  }
+  .nav .nav-menu-list a:hover { background: var(--chip-bg); color: var(--accent); }
+  .nav-menu-list .fmt { color: var(--text-faint); font-size: .8rem; }
+
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; padding: 0;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    transition: color .2s ease, border-color .2s ease, background-color .2s ease;
+  }
+  .toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .toggle svg { width: 17px; height: 17px; }
+  .icon-sun { display: none; }
+  [data-theme="dark"] .icon-sun { display: block; }
+  [data-theme="dark"] .icon-moon { display: none; }
+
+  /* Page */
+  .page-head { padding: 52px 0 6px; }
+  .page-head h1 {
+    font-family: var(--font-serif); font-weight: 600; font-size: 2.1rem; line-height: 1.15;
+    margin: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+
+  /* Post list */
+  .post-list { list-style: none; margin: 0 0 40px; padding: 0; }
+  .post { display: flex; gap: 20px; align-items: flex-start; padding: 22px 0; border-bottom: 1px solid var(--border); }
+  .post:last-child { border-bottom: 0; }
+  .post-thumb {
+    flex-shrink: 0; display: block; width: 168px; aspect-ratio: 1 / 1;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: #fff;
+  }
+  .post-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .post-body { flex: 1; min-width: 0; }
+  .post-date { color: var(--text-faint); font-size: .85rem; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+  .post-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.3rem; line-height: 1.3; margin: 0 0 8px; }
+  .post-title a { color: var(--text); }
+  .post-title a:hover { color: var(--accent); text-decoration: none; }
+  .post-excerpt { color: var(--text-muted); font-size: .93rem; line-height: 1.6; margin: 0 0 10px; }
+  .post-paper { font-size: .88rem; color: var(--text-muted); margin: 0 0 10px; }
+  .post-paper em { color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--chip-bg); color: var(--chip-text); }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 26px 0 44px; color: var(--text-faint); font-size: .85rem; }
+  footer a { color: var(--text-muted); }
+
+  /* The full nav needs ~730px; below that keep only the nav-keep links */
+  @media (max-width: 760px) {
+    .brand { white-space: nowrap; }
+    .nav { gap: 16px; }
+    .nav a { display: none; }
+    .nav a.nav-keep { display: inline-block; }
+    .nav .nav-menu-list a { display: flex; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px; }
+    .nav { gap: 12px; }
+    .page-head { padding-top: 36px; }
+    .page-head h1 { font-size: 1.85rem; }
+    .post { flex-direction: column; gap: 12px; }
+    .post-thumb { width: 200px; }
+  }
+  @media (max-width: 380px) {
+    .brand { font-size: 1rem; }
+    .nav { gap: 10px; }
+  }
+  @media (max-width: 355px) {
+    .brand { white-space: normal; line-height: 1.15; }
+  }
+</style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../">Yixuan Wang</a>
+      <nav class="nav">
+        <a href="../#about">About</a>
+        <a href="../#news">News</a>
+        <a class="nav-keep" href="../#publications">Publications</a>
+        <a href="../#education">Education</a>
+        <details class="nav-menu">
+          <summary>CV</summary>
+          <div class="nav-menu-list">
+            <a href="../files/Yixuan_Wang_CV.pdf" target="_blank" rel="noopener">Academic CV <span class="fmt">PDF</span></a>
+            <a href="../files/Yixuan_Wang_Research_Resume.pdf" target="_blank" rel="noopener">Research Resume <span class="fmt">PDF</span></a>
+            <a href="../files/Yixuan_Wang_CV.html" target="_blank" rel="noopener">Academic CV <span class="fmt">HTML</span></a>
+          </div>
+        </details>
+        <a class="nav-keep current" href="./" aria-current="page">Blog</a>
+        <a href="../snake.html">Fun Stuffs</a>
+        <button id="theme-toggle" class="toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <h1>Blog</h1>
+    </div>
+
+    <ul class="post-list">
+
+      <li class="post">
+        <a class="post-thumb" href="rlf/"><img src="../images/pubs/riemannian-lyapunov.png" alt="3D diagram of the NAIM manifold with fast trajectories converging onto it and slow evolution along it" loading="lazy"></a>
+        <div class="post-body">
+          <div class="post-date">Nov 2026</div>
+          <h2 class="post-title"><a href="rlf/">Stop discovering optimizers. Start designing them.</a></h2>
+          <p class="post-excerpt">SGD, Adam, Lion, Muon: every one of them measures a gradient, decides an update, applies it, and measures again. That is a feedback controller, and control theory has spent seventy years learning how to design such loops and prove they work.</p>
+          <p class="post-paper">On the paper <em><a href="https://arxiv.org/abs/2601.22284v2" target="_blank" rel="noopener">Riemannian Lyapunov Framework</a></em> (NeurIPS 2026)</p>
+          <div class="chips"><span class="chip">Optimizer design</span><span class="chip">Control theory</span><span class="chip">NeurIPS 2026</span></div>
+        </div>
+      </li>
+
+    </ul>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      © 2026 Yixuan Wang · <a href="mailto:wang.yixuan@ufl.edu">wang.yixuan@ufl.edu</a> · <a href="../">Homepage</a>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    function syncLabel() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+    syncLabel();
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      syncLabel();
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  })();
+
+  (function () {
+    var menu = document.querySelector('.nav-menu');
+    if (!menu) return;
+    document.addEventListener('click', function (e) {
+      if (menu.open && !menu.contains(e.target)) menu.open = false;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') menu.open = false;
+    });
+  })();
+  </script>
+</body>
+</html>
