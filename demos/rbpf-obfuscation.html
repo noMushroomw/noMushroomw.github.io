@@ -211,7 +211,9 @@
 /* Faithful JS port of the notebook `cdc_obfuscation_experiments.ipynb`:
    RBPF with per-particle scalar Kalman filters, paper-style resampling with
    fresh prior particles, Chebyshev-center obfuscation controller inside a
-   prescribed tracking envelope, and a Monte-Carlo KL leakage estimate. */
+   prescribed tracking envelope, and a Monte-Carlo KL leakage estimate.
+   One addition over the notebook: a degeneracy fix (RBPF.rejuvenate) so the
+   filter cannot freeze after collapsing onto a single hypothesis. */
 
 // ---------- seeded RNG ----------
 function makeRng(seed) {
@@ -243,6 +245,8 @@ const CFG = {
   roughenBandwidth: 0.15,
   sigmaX: 0.38, sigmaR: 0.38, sigmaT: 0.38,
   muDes: 1.0, rho0: 0.3,
+  // degeneracy fix: once the cloud has collapsed onto one hypothesis, re-draw this fraction from the prior
+  collapseTol: 0.1, rejuvFrac: 0.05,
   mcSamples: 120,
   goal: [7.0, 7.0], rStar: 1.5, tStar: 25.0, x0: [-3.0, -4.0],
   tEnd: 30.0,
@@ -356,6 +360,7 @@ class RBPF {
     this.logW = new Float64Array(N).fill(-Math.log(N));
     this.currentTime = 0.0;
     this.resampleCount = 0;
+    this.rejuvCount = 0;
     this.lastNis = NaN;
     this.lastY = [0, 0];
     this.reduced = Int32Array.from({ length: N }, (_, i) => i);
@@ -423,7 +428,34 @@ class RBPF {
     } else {
       this.reduced = effective;
     }
+    this.rejuvenate();
     return resampled;
+  }
+  // Degeneracy fix. When every particle has collapsed onto (essentially) one hypothesis, the filter
+  // stops inferring: the copies predict identically, their weights stay uniform, N_eff never drops,
+  // so resampling never fires again and the estimate freezes even if the agent turns away.
+  // Fix: drop a few copies (the lowest-weight ones) and re-draw them from the prior over the whole
+  // workspace, anchored at the last observation, then reset to equal weights as after resampling.
+  rejuvenate() {
+    const c = this.cfg, N = this.N;
+    let sw = 0, mx = 0, my = 0;
+    for (let i = 0; i < N; i++) { const w = Math.exp(this.logW[i]); sw += w; mx += w * this.gx[i]; my += w * this.gy[i]; }
+    mx /= sw; my /= sw;
+    let v = 0;
+    for (let i = 0; i < N; i++) v += Math.exp(this.logW[i]) * ((this.gx[i] - mx) ** 2 + (this.gy[i] - my) ** 2);
+    if (Math.sqrt(v / sw) >= c.collapseTol) return false;
+    const nNew = Math.max(1, Math.round(c.rejuvFrac * N));
+    const order = Int32Array.from({ length: N }, (_, i) => i).sort((a, b) => this.logW[a] - this.logW[b]);
+    for (let k = 0; k < nNew; k++) {
+      const j = order[k];
+      this.drawPriorInto(j);
+      this.xh[2 * j] = this.lastY[0]; this.xh[2 * j + 1] = this.lastY[1];
+      this.p[j] = c.p0;
+    }
+    this.logW.fill(-Math.log(N));
+    this.reduced = order.slice(nNew);
+    this.rejuvCount++;
+    return true;
   }
   resamplePaper(keep) {
     const c = this.cfg, N = this.N;
