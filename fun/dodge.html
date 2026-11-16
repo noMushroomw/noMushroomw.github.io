@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dodge the Observer · Yixuan Wang</title>
+<meta name="description" content="A dodgeball game against a shooter that runs a Rao-Blackwellized particle filter on your trajectory to infer your goal.">
+<meta name="theme-color" content="#ffffff">
+
+<!-- Match the site: saved choice wins, otherwise follow the OS on first visit. -->
+<script>
+(function () {
+  function osDark(){ try { return matchMedia('(prefers-color-scheme: dark)').matches; } catch(e){ return false; } }
+  var t; try { var s = localStorage.getItem('theme'); t = (s==='dark'||s==='light') ? s : (osDark()?'dark':'light'); }
+  catch(e){ t = osDark()?'dark':'light'; }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+
+<style>
+  :root{
+    --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+    --bg:#ffffff;
+    --bg-elevated:rgba(255,255,255,0.82);
+    --surface:#ffffff;
+    --surface-2:#f5f7fc;
+    --text:#1c1c1e;
+    --text-muted:#5f6672;
+    --text-faint:#9aa0a9;
+    --border:#e7e8ee;
+    --accent:#2b5fd9;
+    --accent-hover:#1e49bf;
+    --danger:#dc2626;
+    --est:#8b5cf6;
+    --overlay-bg:rgba(255,255,255,0.86);
+    --shadow:0 10px 30px rgba(20,30,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#060608;
+    --bg-elevated:rgba(10,10,13,0.82);
+    --surface:#0d0d12;
+    --surface-2:#101019;
+    --text:#e7e7ea;
+    --text-muted:#9a9aa3;
+    --text-faint:#6a6a73;
+    --border:#1d1d23;
+    --accent:#74a2ff;
+    --accent-hover:#97baff;
+    --danger:#f87171;
+    --est:#a78bfa;
+    --overlay-bg:rgba(8,10,18,0.86);
+    --shadow:0 16px 40px rgba(0,0,0,0.5);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ min-height:100%; }
+  body{
+    min-height:100vh; display:flex; flex-direction:column;
+    font-family:var(--font-sans); color:var(--text); background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .25s ease, color .25s ease;
+  }
+  a{ color:var(--accent); text-decoration:none; }
+  a:hover{ color:var(--accent-hover); text-decoration:underline; }
+
+  .site-header{
+    position:sticky; top:0; z-index:30;
+    backdrop-filter:saturate(180%) blur(10px);
+    -webkit-backdrop-filter:saturate(180%) blur(10px);
+    background:var(--bg-elevated); border-bottom:1px solid var(--border);
+  }
+  .site-header .bar{
+    max-width:1080px; margin:0 auto; padding:0 20px; height:54px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{ font-family:var(--font-serif); font-weight:600; font-size:1.05rem; color:var(--text); }
+  .brand .arrow{ color:var(--text-faint); margin-right:6px; }
+  .brand:hover{ color:var(--accent); text-decoration:none; }
+  .toggle{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; border:1px solid var(--border); border-radius:9px;
+    background:transparent; color:var(--text-muted); cursor:pointer;
+    transition:color .2s ease, border-color .2s ease;
+  }
+  .toggle:hover{ color:var(--accent); border-color:var(--accent); }
+  .toggle svg{ width:17px; height:17px; }
+  .icon-sun{ display:none; }
+  [data-theme="dark"] .icon-sun{ display:block; }
+  [data-theme="dark"] .icon-moon{ display:none; }
+
+  .main{
+    flex:1; width:100%; max-width:1080px; margin:0 auto;
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+    padding:20px 16px 34px; user-select:none; -webkit-user-select:none;
+  }
+  .title{ font-family:var(--font-serif); font-weight:600; font-size:1.85rem; text-align:center; }
+  .subtitle{ text-align:center; color:var(--text-muted); font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; margin-top:1px; }
+
+  .hud{ display:flex; gap:9px; flex-wrap:wrap; justify-content:center; }
+  .pill{
+    display:flex; align-items:center; gap:8px; padding:7px 13px;
+    background:var(--surface); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow);
+  }
+  .pill .label{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-faint); }
+  .pill .value{ font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; min-width:1.4ch; text-align:right; color:var(--accent); }
+  .pill .value.hearts{ color:var(--danger); letter-spacing:2px; }
+  .pill .value.warn{ color:var(--danger); }
+
+  .play{ display:flex; gap:18px; align-items:flex-start; justify-content:center; width:100%; }
+  .stage{
+    position:relative; flex-shrink:0;
+    width:min(92vw, calc(100vh - 230px), 620px); min-width:300px; aspect-ratio:1/1;
+    border-radius:18px; padding:10px;
+    background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow);
+    touch-action:none;
+  }
+  canvas{ display:block; width:100%; height:100%; border-radius:12px; touch-action:none; cursor:crosshair; }
+
+  .overlay{
+    position:absolute; inset:10px; border-radius:12px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center;
+    padding:18px; background:var(--overlay-bg);
+    backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+    transition:opacity .26s ease, transform .26s ease; z-index:3;
+  }
+  .overlay.hidden{ opacity:0; pointer-events:none; transform:scale(1.02); }
+  .overlay h2{ font-family:var(--font-serif); font-size:clamp(20px,3.2vw,27px); font-weight:600; }
+  .overlay h2.go{ color:var(--danger); }
+  .overlay h2.record{ color:var(--accent); }
+  .overlay p{ color:var(--text-muted); font-size:13.5px; max-width:36ch; line-height:1.5; }
+  .overlay p b{ color:var(--text); }
+  .overlay:not(.hidden) h2{ animation:popIn .4s cubic-bezier(.2,.9,.25,1.2) both; }
+  .overlay:not(.hidden) .keys, .overlay:not(.hidden) p{ animation:fadeUp .38s ease .07s both; }
+  .overlay:not(.hidden) .btn{ animation:fadeUp .38s ease .14s both; }
+  @keyframes popIn{ from{ opacity:0; transform:translateY(8px) scale(.88);} to{ opacity:1; transform:none;} }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+
+  .keys{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .keycluster{ display:grid; grid-template-columns:repeat(3,26px); grid-template-rows:repeat(2,26px); gap:4px; }
+  kbd{
+    display:inline-flex; align-items:center; justify-content:center; height:26px; min-width:26px; padding:0 6px;
+    font-family:inherit; font-size:12px; font-weight:700; color:var(--text);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:7px;
+  }
+  .keycluster kbd.up{ grid-column:2; grid-row:1; }
+  .keycluster kbd.left{ grid-column:1; grid-row:2; }
+  .keycluster kbd.down{ grid-column:2; grid-row:2; }
+  .keycluster kbd.right{ grid-column:3; grid-row:2; }
+  .keys .or{ font-size:12px; color:var(--text-faint); }
+
+  .btn{
+    appearance:none; cursor:pointer; padding:11px 24px;
+    font-family:inherit; font-size:14.5px; font-weight:700; letter-spacing:.02em;
+    color:#fff; background:var(--accent); border:none; border-radius:10px; box-shadow:var(--shadow);
+    transition:background-color .15s ease, transform .12s ease;
+  }
+  .btn:hover{ background:var(--accent-hover); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(1px); }
+
+  /* side panel */
+  .side{ width:300px; display:flex; flex-direction:column; gap:12px; }
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow); padding:13px 16px;
+  }
+  .card h3{
+    font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--text-faint); margin-bottom:8px;
+  }
+  .card p{ font-size:.84rem; color:var(--text-muted); line-height:1.55; }
+  .card p + p{ margin-top:8px; }
+  .card p b{ color:var(--text); font-weight:600; }
+
+  .switch{ display:flex; align-items:center; gap:11px; cursor:pointer; padding:5px 0; position:relative; }
+  .switch input{ position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
+  .switch .track{
+    position:relative; flex-shrink:0; width:40px; height:23px; border-radius:999px;
+    background:var(--border); transition:background-color .18s ease;
+  }
+  .switch .track::after{
+    content:""; position:absolute; top:3px; left:3px; width:17px; height:17px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .18s ease;
+  }
+  .switch input:checked + .track{ background:var(--accent); }
+  .switch input:checked + .track::after{ transform:translateX(17px); }
+  .switch input:focus-visible + .track{ outline:2px solid var(--accent); outline-offset:2px; }
+  .switch .lbl{ font-size:.92rem; color:var(--text); }
+  .switch.big .lbl{ font-weight:700; font-size:1rem; }
+  .switch .kb{ margin-left:auto; }
+  .switch .kb kbd{ height:20px; min-width:20px; font-size:10.5px; border-radius:5px; }
+  .mode-desc{ margin:4px 0 8px; min-height:3.1em; }
+  .divider{ height:1px; background:var(--border); margin:6px 0; }
+
+  .meter-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:.84rem; color:var(--text-muted); }
+  .meter-row b{ color:var(--text); font-size:1rem; font-variant-numeric:tabular-nums; }
+  .meter{ height:9px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden; margin:6px 0 10px; }
+  .meter-fill{ height:100%; width:0%; border-radius:999px; background:#1f9d55; transition:width .15s linear; }
+  .stat-row{ display:flex; justify-content:space-between; font-size:.84rem; color:var(--text-muted); padding:2px 0; }
+  .stat-row b{ color:var(--text); font-variant-numeric:tabular-nums; font-weight:600; }
+  .caption{ font-size:.75rem !important; color:var(--text-faint) !important; margin-top:6px; }
+
+  .legend{ display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; font-size:.78rem; color:var(--text-muted); margin-top:4px; }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ display:inline-block; width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .legend .glow-swatch{ background:radial-gradient(circle, var(--est) 0%, transparent 72%); }
+  .legend .reticle-swatch{ border:1.5px solid var(--est); background:transparent; }
+
+  .links{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .links a{
+    font-size:.76rem; padding:3px 9px; border-radius:999px;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted);
+  }
+  .links a:hover{ color:var(--accent); border-color:var(--accent); text-decoration:none; }
+
+  footer.hint{ color:var(--text-muted); font-size:12px; text-align:center; line-height:1.9; }
+  footer.hint b{ color:var(--text); font-weight:600; }
+
+  @media (max-width:960px){
+    .play{ flex-direction:column; align-items:center; }
+    .stage{ width:min(92vw, 620px); }
+    .side{ width:min(92vw, 620px); }
+  }
+  @media (max-width:520px){ .subtitle{ display:none; } .title{ font-size:1.55rem; } }
+  @media (prefers-reduced-motion: reduce){
+    .overlay{ transition:none; }
+    .overlay:not(.hidden) h2, .overlay:not(.hidden) .keys, .overlay:not(.hidden) p, .overlay:not(.hidden) .btn{ animation:none; }
+    .btn, .switch .track, .switch .track::after, .meter-fill{ transition:none; }
+  }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="./"><span class="arrow">←</span>Fun Stuffs</a>
+      <button id="theme-toggle" class="toggle" type="button" aria-label="Switch theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div>
+      <div class="title">Dodge the Observer</div>
+      <div class="subtitle">dodgeball vs. a particle filter</div>
+    </div>
+
+    <div class="hud">
+      <div class="pill"><span class="label">Round</span><span class="value" id="hud-round">1</span></div>
+      <div class="pill"><span class="label">Score</span><span class="value" id="hud-score">0</span></div>
+      <div class="pill"><span class="label">Lives</span><span class="value hearts" id="hud-lives">♥♥♥</span></div>
+      <div class="pill"><span class="label">Clock</span><span class="value" id="hud-clock">–</span></div>
+      <div class="pill"><span class="label">Best</span><span class="value" id="hud-best">0</span></div>
+    </div>
+
+    <div class="play">
+      <div class="stage" id="stage">
+        <canvas id="game" aria-label="Dodge the Observer game arena"></canvas>
+        <div class="overlay" id="overlay">
+          <h2 id="ov-title">Ready?</h2>
+          <p id="ov-text">Reach the <b>★ goal</b> and hold it for half a second before its clock runs out, without getting hit. An observer is watching your noisy position the whole time.</p>
+          <div class="keys" id="ov-keys">
+            <div class="keycluster"><kbd class="up">W</kbd><kbd class="left">A</kbd><kbd class="down">S</kbd><kbd class="right">D</kbd></div>
+            <div class="keycluster"><kbd class="up">↑</kbd><kbd class="left">←</kbd><kbd class="down">↓</kbd><kbd class="right">→</kbd></div>
+            <span class="or">or hold &amp; drag</span>
+          </div>
+          <button class="btn" id="ov-btn" type="button">Play</button>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="card">
+          <h3>Shooter</h3>
+          <label class="switch big">
+            <input type="checkbox" id="sw-rbpf">
+            <span class="track"></span>
+            <span class="lbl">+ RBPF inference</span>
+            <span class="kb"><kbd>I</kbd></span>
+          </label>
+          <p class="mode-desc" id="mode-desc"></p>
+          <div class="divider"></div>
+          <label class="switch">
+            <input type="checkbox" id="sw-belief" checked>
+            <span class="track"></span>
+            <span class="lbl">Show observer's belief</span>
+            <span class="kb"><kbd>B</kbd></span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3>Observer</h3>
+          <div class="meter-row"><span>Confidence in your goal</span><b id="conf-val">–</b></div>
+          <div class="meter"><div class="meter-fill" id="conf-fill"></div></div>
+          <div class="stat-row"><span>Inferred-goal error</span><b id="err-val">–</b></div>
+          <div class="stat-row"><span>Stealth this round</span><b id="stealth-val">–</b></div>
+          <p class="caption">Confidence = posterior mass of goal hypotheses inside your goal circle. Stealth = share of the round it stayed under 50%; with RBPF on it pays a bonus.</p>
+          <div class="legend">
+            <span><i class="glow-swatch"></i>observer's focus</span>
+            <span><i class="reticle-swatch"></i>inferred goal</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>What's going on</h3>
+          <p>The observer only sees your position, with noise, ten times a second. It runs the <b>Rao-Blackwellized particle filter</b> from the IFAC 2026 paper: 1,500 hypotheses about your goal, each assuming you're a stabilizing agent heading there, reweighted by how well it predicts your next step.</p>
+          <p>Heading straight for the ★ gives it away, because <b>stability itself is the leak</b>. The CDC 2026 paper's counter-move is to keep the belief ambiguous while still arriving on time. Try a decoy, then cut in late.</p>
+          <div class="links">
+            <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">IFAC 2026 paper</a>
+            <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">CDC 2026 paper</a>
+            <a href="../demos/rbpf-obfuscation.html">Interactive demo</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="hint">
+      <div><b>WASD</b> / <b>Arrows</b> or <b>hold &amp; drag</b> to move · <b>Space</b> pause · <b>R</b> restart · <b>I</b> RBPF · <b>B</b> belief</div>
+    </footer>
+  </main>
+
+<script>
+(() => {
+"use strict";
+
+/* ===================================================================
+   Observer: the RBPF from the IFAC 2026 paper, ported from the notebook
+   (same parameters as CONFIG there and as ../demos/rbpf-obfuscation.html).
+   Each particle is an intent hypothesis theta = (goal, radius, arrival time)
+   with its own scalar Kalman filter of the agent's position under the
+   assumed closed loop  x' = -lambda(theta) (x - goal).
+   =================================================================== */
+function makeRng(seed) {
+  let a = seed >>> 0, spare = null;
+  const rng = {
+    random() {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+    gauss() {
+      if (spare !== null) { const v = spare; spare = null; return v; }
+      let u, v, s;
+      do { u = 2 * rng.random() - 1; v = 2 * rng.random() - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+      const m = Math.sqrt(-2 * Math.log(s) / s);
+      spare = v * m; return u * m;
+    },
+  };
+  return rng;
+}
+const RNG = makeRng((Math.random() * 4294967296) >>> 0);
+
+const CFG = {
+  R: 12.0, rMin: 0.5, rMax: 3.0, tMin: 10.0, tMax: 35.0,
+  dBar: 0.2, dt: 0.1, errStd: 0.1, sigmaD: 0.38,
+  N: 1500, N0frac: 0.25, p0: 0.1, roughenBandwidth: 0.15,
+  // degeneracy fix: once the cloud has collapsed onto one hypothesis, re-draw this fraction from the prior
+  collapseTol: 0.1, rejuvFrac: 0.05,
+};
+
+function lambdaGain(r, t, Rb, dBar) {
+  r = Math.max(r, 1e-12); t = Math.max(t, 1e-12);
+  return Math.max(2.0 * dBar / r, Math.log(Math.max(2.0 * Rb / r, 1.0)) / t, 1e-8);
+}
+function sampleInBall(rng, radius) {
+  let gx, gy, n2;
+  do { gx = rng.gauss(); gy = rng.gauss(); n2 = gx * gx + gy * gy; } while (n2 === 0);
+  const inv = 1 / Math.sqrt(n2), rr = radius * Math.sqrt(rng.random());
+  return [gx * inv * rr, gy * inv * rr];
+}
+function logsumexp(arr) {
+  let mx = -Infinity;
+  for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+  if (mx === -Infinity) return -Infinity;
+  let s = 0;
+  for (let i = 0; i < arr.length; i++) s += Math.exp(arr[i] - mx);
+  return mx + Math.log(s);
+}
+
+class RBPF {
+  constructor(cfg, rng) {
+    this.cfg = cfg; this.rng = rng;
+    const N = this.N = cfg.N | 0;
+    this.N0 = Math.floor(cfg.N0frac * N);
+    this.varObs = cfg.errStd * cfg.errStd;
+    this.varProc = (cfg.sigmaD * cfg.dBar) ** 2;
+    this.gx = new Float64Array(N); this.gy = new Float64Array(N);
+    this.radii = new Float64Array(N); this.times = new Float64Array(N);
+    this.lam = new Float64Array(N);
+    this.xh = new Float64Array(2 * N);
+    this.p = new Float64Array(N).fill(cfg.p0);
+    this.logW = new Float64Array(N).fill(-Math.log(N));
+    this.lastY = [0, 0];
+    this.rejuvCount = 0;
+    this.reduced = Int32Array.from({ length: N }, (_, i) => i);
+    for (let i = 0; i < N; i++) this.drawPriorInto(i);
+  }
+  drawPriorInto(i) {
+    const c = this.cfg, rng = this.rng;
+    const g = sampleInBall(rng, c.R);
+    this.gx[i] = g[0]; this.gy[i] = g[1];
+    this.radii[i] = c.rMin + (c.rMax - c.rMin) * rng.random();
+    this.times[i] = c.tMin + (c.tMax - c.tMin) * rng.random();
+    this.lam[i] = lambdaGain(this.radii[i], this.times[i], c.R, c.dBar);
+  }
+  initialize(y) {
+    for (let i = 0; i < this.N; i++) { this.xh[2 * i] = y[0]; this.xh[2 * i + 1] = y[1]; }
+    this.lastY = [y[0], y[1]];
+  }
+  nEff() {
+    let s = 0;
+    for (let i = 0; i < this.N; i++) { const w = Math.exp(this.logW[i]); s += w * w; }
+    return Math.floor(1.0 / s);
+  }
+  update(y) {
+    const c = this.cfg, N = this.N, dt = c.dt;
+    this.lastY = [y[0], y[1]];
+    for (let i = 0; i < N; i++) {
+      const lam = this.lam[i];
+      const px = this.xh[2 * i] + dt * (-lam * (this.xh[2 * i] - this.gx[i]));
+      const py = this.xh[2 * i + 1] + dt * (-lam * (this.xh[2 * i + 1] - this.gy[i]));
+      const pPrior = (1 - lam * dt) * (1 - lam * dt) * this.p[i] + dt * dt * this.varProc;
+      const ix = y[0] - px, iy = y[1] - py;
+      const s = pPrior + this.varObs;
+      const gain = pPrior / s;
+      this.xh[2 * i] = px + gain * ix;
+      this.xh[2 * i + 1] = py + gain * iy;
+      this.p[i] = (1 - gain) * pPrior;
+      this.logW[i] += -0.5 * (ix * ix + iy * iy) / s - Math.log(2 * Math.PI * s);
+    }
+    const lse = logsumexp(this.logW);
+    for (let i = 0; i < N; i++) this.logW[i] -= lse;
+
+    const nEff = this.nEff();
+    const keepCount = Math.min(Math.max(nEff, 1), N);
+    const order = Int32Array.from({ length: N }, (_, i) => i);
+    order.sort((a, b) => this.logW[b] - this.logW[a]);
+    const effective = order.slice(0, keepCount);
+    if (nEff < this.N0) this.resamplePaper(effective);
+    else this.reduced = effective;
+    this.rejuvenate();
+  }
+  // Degeneracy fix. When every particle has collapsed onto (essentially) one hypothesis, the filter
+  // stops inferring: the copies predict identically, their weights stay uniform, N_eff never drops,
+  // so resampling never fires again and the estimate freezes even if the agent turns away.
+  // Fix: drop a few copies (the lowest-weight ones) and re-draw them from the prior over the whole
+  // workspace, anchored at the last observation, then reset to equal weights as after resampling.
+  rejuvenate() {
+    const c = this.cfg, N = this.N;
+    let sw = 0, mx = 0, my = 0;
+    for (let i = 0; i < N; i++) { const w = Math.exp(this.logW[i]); sw += w; mx += w * this.gx[i]; my += w * this.gy[i]; }
+    mx /= sw; my /= sw;
+    let v = 0;
+    for (let i = 0; i < N; i++) v += Math.exp(this.logW[i]) * ((this.gx[i] - mx) ** 2 + (this.gy[i] - my) ** 2);
+    if (Math.sqrt(v / sw) >= c.collapseTol) return false;
+    const nNew = Math.max(1, Math.round(c.rejuvFrac * N));
+    const order = Int32Array.from({ length: N }, (_, i) => i).sort((a, b) => this.logW[a] - this.logW[b]);
+    for (let k = 0; k < nNew; k++) {
+      const j = order[k];
+      this.drawPriorInto(j);
+      this.xh[2 * j] = this.lastY[0]; this.xh[2 * j + 1] = this.lastY[1];
+      this.p[j] = c.p0;
+    }
+    this.logW.fill(-Math.log(N));
+    this.reduced = order.slice(nNew);
+    this.rejuvCount++;
+    return true;
+  }
+  // paper-style resampling: replicate the effective particles, roughen them,
+  // refill the rest with fresh prior hypotheses anchored at the last observation
+  resamplePaper(keep) {
+    const c = this.cfg, N = this.N;
+    let wEff = 0;
+    for (const i of keep) wEff += Math.exp(this.logW[i]);
+    const rep = [];
+    for (const i of keep) {
+      const copies = Math.floor(Math.exp(this.logW[i]) * N / wEff);
+      for (let k = 0; k < copies; k++) rep.push(i);
+    }
+    const nRep = rep.length;
+    const gx = new Float64Array(N), gy = new Float64Array(N);
+    const radii = new Float64Array(N), times = new Float64Array(N);
+    const xh = new Float64Array(2 * N), p = new Float64Array(N);
+    for (let j = 0; j < nRep; j++) {
+      const i = rep[j];
+      gx[j] = this.gx[i]; gy[j] = this.gy[i];
+      radii[j] = this.radii[i]; times[j] = this.times[i];
+      xh[2 * j] = this.xh[2 * i]; xh[2 * j + 1] = this.xh[2 * i + 1];
+      p[j] = this.p[i];
+    }
+    if (nRep > 1) {
+      const b = c.roughenBandwidth;
+      let mx = 0, my = 0, mr = 0, mt = 0;
+      for (let j = 0; j < nRep; j++) { mx += gx[j]; my += gy[j]; mr += radii[j]; mt += times[j]; }
+      mx /= nRep; my /= nRep; mr /= nRep; mt /= nRep;
+      let vx = 0, vy = 0, vr = 0, vt = 0;
+      for (let j = 0; j < nRep; j++) {
+        vx += (gx[j] - mx) ** 2; vy += (gy[j] - my) ** 2;
+        vr += (radii[j] - mr) ** 2; vt += (times[j] - mt) ** 2;
+      }
+      const hX = b * Math.sqrt(vx / nRep) + 1e-3, hY = b * Math.sqrt(vy / nRep) + 1e-3;
+      const hR = b * Math.sqrt(vr / nRep) + 1e-3, hT = b * Math.sqrt(vt / nRep) + 1e-3;
+      for (let j = 0; j < nRep; j++) {
+        gx[j] += hX * this.rng.gauss();
+        gy[j] += hY * this.rng.gauss();
+        const nrm = Math.hypot(gx[j], gy[j]);
+        if (nrm > c.R) { gx[j] *= c.R / nrm; gy[j] *= c.R / nrm; }
+        radii[j] = Math.min(Math.max(radii[j] + hR * this.rng.gauss(), c.rMin), c.rMax);
+        times[j] = Math.min(Math.max(times[j] + hT * this.rng.gauss(), c.tMin), c.tMax);
+      }
+    }
+    this.gx = gx; this.gy = gy; this.radii = radii; this.times = times; this.xh = xh; this.p = p;
+    for (let j = nRep; j < N; j++) {
+      this.drawPriorInto(j);
+      this.xh[2 * j] = this.lastY[0]; this.xh[2 * j + 1] = this.lastY[1];
+      this.p[j] = c.p0;
+    }
+    for (let i = 0; i < N; i++) this.lam[i] = lambdaGain(this.radii[i], this.times[i], c.R, c.dBar);
+    this.logW.fill(-Math.log(N));
+    this.reduced = Int32Array.from({ length: nRep }, (_, j) => j);
+  }
+  // reduced estimator (notebook estimate("reduced")): weighted mean over the effective set
+  estimateReduced() {
+    let sw = 0, ex = 0, ey = 0, er = 0;
+    for (const i of this.reduced) sw += Math.exp(this.logW[i]);
+    if (sw <= 0) sw = 1;
+    for (const i of this.reduced) {
+      const w = Math.exp(this.logW[i]) / sw;
+      ex += w * this.gx[i]; ey += w * this.gy[i]; er += w * this.radii[i];
+    }
+    return [ex, ey, Math.min(Math.max(er, this.cfg.rMin), this.cfg.rMax)];
+  }
+  // posterior probability that the goal centre lies within r of (cx, cy)
+  massNear(cx, cy, r) {
+    const r2 = r * r;
+    let m = 0;
+    for (let i = 0; i < this.N; i++) {
+      const dx = this.gx[i] - cx, dy = this.gy[i] - cy;
+      if (dx * dx + dy * dy <= r2) m += Math.exp(this.logW[i]);
+    }
+    return m;
+  }
+  // draw one goal hypothesis from the posterior (what the shooter fires at)
+  sampleGoal(rng) {
+    const u = rng.random();
+    let c = 0;
+    for (let i = 0; i < this.N; i++) {
+      c += Math.exp(this.logW[i]);
+      if (c >= u) return [this.gx[i], this.gy[i]];
+    }
+    return [this.gx[this.N - 1], this.gy[this.N - 1]];
+  }
+}
+
+/* ===================================================================
+   Game
+   =================================================================== */
+const G = {
+  LIM: 12.9,       // half-width of the view, world units
+  RIM: 12.0,       // arena radius = the filter's workspace radius R
+  PR: 0.42,        // player radius
+  BR: 0.38,        // ball radius
+  VMAX: 4.0,       // player top speed (units / s)
+  ACC: 16,         // velocity smoothing rate
+  KP: 2.4,         // pointer-follow gain: velocity = KP * (pointer - x), capped at VMAX
+  TELE: 0.45,      // launch wind-up (s)
+  LIVES: 3,
+  INVULN: 1.0,
+  HOME_TURN: 0.9,  // RBPF balls: max turn rate toward the observer's latest estimate (rad / s)
+};
+
+const $ = id => document.getElementById(id);
+const canvas = $("game"), ctx = canvas.getContext("2d");
+const overlay = $("overlay"), ovTitle = $("ov-title"), ovText = $("ov-text"), ovBtn = $("ov-btn"), ovKeys = $("ov-keys");
+const swRbpf = $("sw-rbpf"), swBelief = $("sw-belief");
+const reduceMotion = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+
+const S = {
+  state: "ready",            // ready | playing | paused | over
+  rbpf: store.get("dodge.rbpf", "0") === "1",
+  showBelief: store.get("dodge.belief", "1") !== "0",
+  round: 1, score: 0, lives: G.LIVES,
+  P: { x: 0, y: 0, vx: 0, vy: 0 },
+  obs: [0, 0], obsHist: [], vEst: [0, 0],
+  goal: { x: 6, y: 5, r: 1.6 },
+  deadline: 10, roundT: 0, stealthT: 0, hold: 0, holdNeed: 1,
+  filt: null, obsAcc: 0,
+  conf: 0, focus: 0, est: [0, 0, 1], estErr: NaN,
+  balls: [], launches: [], sparks: [], floaters: [],
+  spawnT: 0, calm: 0, invuln: 0, flash: 0, shake: 0,
+  banner: null, runMixed: false, endReason: "",
+};
+
+const keys = { up: false, down: false, left: false, right: false };
+const pointer = { active: false, x: 0, y: 0, id: null };
+
+/* ---------- theme palette ---------- */
+const THEMES = {
+  light: {
+    glow: false, base: "#ffffff", arenaA: "#f7f9fe", arenaB: "#edf1fa", rim: "#c3c6d1",
+    goal: "31,157,85", ball: "#e5484d", ballHi: "#ffc2c4", ballRGB: "229,72,77",
+    player: "#2b5fd9", playerRGB: "43,95,217", est: "#8b5cf6", estRGB: "139,92,246",
+    text: "#1c1c1e", muted: "#5f6672", stroke: "#ffffff",
+  },
+  dark: {
+    glow: true, base: "#08080c", arenaA: "#0f1426", arenaB: "#090b15", rim: "#3a3d4a",
+    goal: "52,211,153", ball: "#f87171", ballHi: "#ffd6d6", ballRGB: "248,113,113",
+    player: "#74a2ff", playerRGB: "116,162,255", est: "#a78bfa", estRGB: "167,139,250",
+    text: "#e7e7ea", muted: "#9a9aa3", stroke: "#08080c",
+  },
+};
+const currentTheme = () => document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+let TH = THEMES[currentTheme()];
+
+/* ---------- helpers ---------- */
+const hyp = Math.hypot;
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+function observe() {
+  S.obs = [S.P.x + CFG.errStd * RNG.gauss(), S.P.y + CFG.errStd * RNG.gauss()];
+  // the classic shooter's velocity estimate: finite difference over the last 0.3 s of sightings
+  const h = S.obsHist;
+  h.push(S.obs);
+  if (h.length > 4) h.shift();
+  if (h.length === 4) {
+    const span = 3 * CFG.dt;
+    S.vEst = [(h[3][0] - h[0][0]) / span, (h[3][1] - h[0][1]) / span];
+  }
+}
+const bestCache = {
+  classic: Number(store.get("dodge.best.classic", 0)) || 0,
+  rbpf: Number(store.get("dodge.best.rbpf", 0)) || 0,
+};
+function bestScore() { return bestCache[S.rbpf ? "rbpf" : "classic"]; }
+
+/* ---------- rounds ---------- */
+function resetFilter() {
+  S.filt = new RBPF(CFG, makeRng((RNG.random() * 4294967296) >>> 0));
+  observe();
+  S.filt.initialize(S.obs);
+  S.obsAcc = 0;
+  afterFilter();
+}
+function newGoal() {
+  const r = 1.3 + 0.6 * RNG.random();
+  let gx = 0, gy = 0;
+  for (let k = 0; k < 80; k++) {
+    const g = sampleInBall(RNG, G.RIM - r - 0.6);
+    gx = g[0]; gy = g[1];
+    if (hyp(gx - S.P.x, gy - S.P.y) >= 9) break;
+  }
+  S.goal = { x: gx, y: gy, r };
+  const d = Math.max(0, hyp(gx - S.P.x, gy - S.P.y) - r);
+  const slack = Math.max(1.4, 1.8 - 0.04 * (S.round - 1));
+  // you must also hold the goal circle for a moment: settling at the goal is what gives it away
+  S.holdNeed = 0.5;
+  S.deadline = Math.ceil(d / G.VMAX * slack + 2.5 + S.holdNeed);
+  S.roundT = 0; S.stealthT = 0; S.hold = 0;
+  S.launches = [];
+  S.calm = 0.6; S.spawnT = 0.15;
+  resetFilter();
+}
+function resetGame() {
+  S.round = 1; S.score = 0; S.lives = G.LIVES;
+  S.P = { x: 0, y: 0, vx: 0, vy: 0 };
+  S.obsHist = []; S.vEst = [0, 0];
+  S.balls = []; S.launches = []; S.sparks = []; S.floaters = [];
+  S.invuln = 0; S.flash = 0; S.shake = 0; S.banner = null; S.runMixed = false;
+  newGoal();
+  S.banner = { text: "Round 1", life: 1.4 };
+}
+
+function spawnInterval() {
+  const base = Math.max(0.28, 0.8 - 0.05 * (S.round - 1));
+  return S.rbpf ? base * 0.65 : base;
+}
+function ballSpeed() { return Math.min(12, 7.5 + 0.4 * (S.round - 1)); }
+// balls per volley: occasional pairs from round 1, triples from round 3
+function volleySize() {
+  const r = S.round, u = RNG.random();
+  const p3 = r >= 3 ? Math.min(0.3, 0.08 * (r - 2)) : 0;
+  const p2 = Math.min(0.55, 0.15 + 0.1 * (r - 1));
+  return u < p3 ? 3 : u < p3 + p2 ? 2 : 1;
+}
+
+// where the shooter wants the ball to go right now
+function currentAim(lead, fromX, fromY) {
+  if (S.rbpf) return S.filt.sampleGoal(RNG);         // a goal hypothesis drawn from the belief
+  // classic: the latest (noisy) sighting of you, optionally led along your estimated velocity
+  const o = S.obs;
+  if (!lead) return [o[0], o[1]];
+  const tau = hyp(o[0] - fromX, o[1] - fromY) / ballSpeed();
+  let ax = o[0] + S.vEst[0] * tau * lead, ay = o[1] + S.vEst[1] * tau * lead;
+  const n = hyp(ax, ay), m = G.RIM - G.PR;
+  if (n > m) { ax *= m / n; ay *= m / n; }
+  return [ax, ay];
+}
+function queueLaunch() {
+  const aim = currentAim(0, 0, 0);
+  let ang = 0;
+  for (let k = 0; k < 14; k++) {
+    ang = RNG.random() * 2 * Math.PI;
+    if (hyp(G.RIM * Math.cos(ang) - aim[0], G.RIM * Math.sin(ang) - aim[1]) > 7) break;
+  }
+  const n = volleySize();
+  for (let j = 0; j < n; j++) {
+    const T = G.TELE + 0.12 * j;
+    const lead = RNG.random() < 0.6 ? 0.4 + 0.6 * RNG.random() : 0;
+    S.launches.push({ ang: ang + (j - (n - 1) / 2) * 0.32, t: T, T, lead });
+  }
+}
+function fire(l) {
+  const sx = (G.RIM + 0.5) * Math.cos(l.ang), sy = (G.RIM + 0.5) * Math.sin(l.ang);
+  const aim = currentAim(l.lead, sx, sy);
+  let dx = aim[0] - sx, dy = aim[1] - sy, d = hyp(dx, dy);
+  if (d < 1e-6) { dx = -sx; dy = -sy; d = hyp(dx, dy); }
+  const sp = ballSpeed();
+  S.balls.push({
+    x: sx, y: sy, vx: sp * dx / d, vy: sp * dy / d,
+    aim: [aim[0], aim[1]], rbpf: S.rbpf, passed: false, mark: 1, trail: [],
+  });
+}
+
+function afterFilter() {
+  const f = S.filt, g = S.goal;
+  S.conf = f.massNear(g.x, g.y, g.r);
+  S.est = f.estimateReduced();
+  S.estErr = hyp(S.est[0] - g.x, S.est[1] - g.y);
+  S.focus = f.massNear(S.est[0], S.est[1], 2.0);   // how concentrated the belief is around its own estimate
+  updateHeat();
+}
+
+/* Observer's focus: the posterior over goal positions, splatted onto a coarse grid,
+   Gaussian-blurred and shown as a soft glow. Cells near the uniform prior density are
+   fully transparent, so a diffuse belief draws nothing and only real focus shows up. */
+const HEAT_N = 64;
+const heat = new Float32Array(HEAT_N * HEAT_N), heatTmp = new Float32Array(HEAT_N * HEAT_N);
+const heatCanvas = document.createElement("canvas");
+heatCanvas.width = heatCanvas.height = HEAT_N;
+const heatCtx = heatCanvas.getContext("2d");
+const heatImg = heatCtx.createImageData(HEAT_N, HEAT_N);
+const HEAT_K = (() => {
+  const s = 1.6, r = 5, k = [];
+  let sum = 0;
+  for (let i = -r; i <= r; i++) { const v = Math.exp(-i * i / (2 * s * s)); k.push(v); sum += v; }
+  return k.map(v => v / sum);
+})();
+function updateHeat() {
+  const f = S.filt; if (!f) return;
+  const n = HEAT_N, cell = 2 * G.LIM / n, R = (HEAT_K.length - 1) / 2;
+  heat.fill(0);
+  for (let i = 0; i < f.N; i++) {
+    const w = Math.exp(f.logW[i]);
+    if (w < 1e-7) continue;
+    const cx = Math.floor((f.gx[i] + G.LIM) / cell), cy = Math.floor((G.LIM - f.gy[i]) / cell);
+    if (cx >= 0 && cy >= 0 && cx < n && cy < n) heat[cy * n + cx] += w;
+  }
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let s = 0;
+    for (let k = -R; k <= R; k++) { const xx = x + k; if (xx >= 0 && xx < n) s += heat[y * n + xx] * HEAT_K[k + R]; }
+    heatTmp[y * n + x] = s;
+  }
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let s = 0;
+    for (let k = -R; k <= R; k++) { const yy = y + k; if (yy >= 0 && yy < n) s += heatTmp[yy * n + x] * HEAT_K[k + R]; }
+    heat[y * n + x] = s;
+  }
+  // uniform prior ~ 3.6e-4 per cell; fade in from ~10x that, saturate near a fully focused peak
+  const d0 = 0.0036, d1 = 0.035, maxA = TH.glow ? 0.6 : 0.45;
+  const rgb = TH.estRGB.split(",").map(Number), data = heatImg.data;
+  for (let i = 0; i < n * n; i++) {
+    const a = clamp((heat[i] - d0) / (d1 - d0), 0, 1);
+    data[4 * i] = rgb[0]; data[4 * i + 1] = rgb[1]; data[4 * i + 2] = rgb[2];
+    data[4 * i + 3] = Math.round(255 * maxA * Math.sqrt(a));
+  }
+  heatCtx.putImageData(heatImg, 0, 0);
+}
+
+function burst(x, y, rgb, n, spMax) {
+  for (let i = 0; i < n; i++) {
+    const a = RNG.random() * 2 * Math.PI, sp = 1 + RNG.random() * spMax;
+    S.sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, decay: 1.4 + RNG.random() * 1.2, rgb });
+  }
+}
+function floater(text, x, y, rgb) { S.floaters.push({ text, x, y, life: 1, rgb }); }
+
+function clearRound() {
+  const g = S.goal;
+  const timeLeft = Math.max(0, S.deadline - S.roundT);
+  const stealth = S.roundT > 0 ? S.stealthT / S.roundT : 0;
+  const bonusT = Math.round(timeLeft * 10);
+  const bonusS = S.rbpf ? Math.round(100 * stealth) : 0;
+  const gained = 100 + bonusT + bonusS;
+  S.score += gained;
+  burst(g.x, g.y, TH.goal, 34, 7);
+  floater("+" + gained + (bonusS ? "  (stealth +" + bonusS + ")" : ""), g.x, g.y + g.r + 0.6, TH.goal);
+  for (const b of S.balls) burst(b.x, b.y, TH.ballRGB, 5, 3);
+  S.balls = [];
+  S.round += 1;
+  S.banner = { text: "Round " + S.round, life: 1.4 };
+  newGoal();
+}
+
+function loseLife(reason) {
+  S.lives -= 1;
+  S.invuln = G.INVULN; S.flash = 1; S.shake = reduceMotion ? 0 : 1;
+  burst(S.P.x, S.P.y, TH.ballRGB, 28, 6);
+  floater(reason, S.P.x, S.P.y + 1.1, TH.ballRGB);
+  if (S.lives <= 0) { S.endReason = reason; gameOver(); }
+}
+
+function gameOver() {
+  S.state = "over";
+  const best = bestScore();
+  const record = !S.runMixed && S.score > best;
+  if (record) { const m = S.rbpf ? "rbpf" : "classic"; bestCache[m] = S.score; store.set("dodge.best." + m, S.score); }
+  const cleared = S.round - 1;
+  const mode = S.rbpf ? "with RBPF inference" : "classic";
+  let text = `Cleared <b>${cleared}</b> round${cleared === 1 ? "" : "s"} for <b>${S.score}</b> points (${mode}).`;
+  if (record) text += " New best!";
+  else if (S.runMixed) text += " Mode changed mid-run, so no best recorded.";
+  else text += ` Best is ${best}.`;
+  showOverlay(record ? "New record!" : (S.endReason === "Time's up" ? "Out of time" : "Caught!"), text, "Play again", record ? "record" : "go", false);
+  updateHud(true);
+}
+
+/* ---------- state transitions ---------- */
+function showOverlay(title, html, btn, cls, showKeys) {
+  ovTitle.textContent = title;
+  ovTitle.className = cls || "";
+  ovText.innerHTML = html;
+  ovBtn.textContent = btn;
+  ovKeys.style.display = showKeys ? "" : "none";
+  overlay.classList.remove("hidden");
+}
+function start() {
+  resetGame();
+  S.state = "playing";
+  overlay.classList.add("hidden");
+  lastTs = 0;
+}
+function pause() {
+  if (S.state !== "playing") return;
+  S.state = "paused";
+  pointer.active = false;
+  showOverlay("Paused", "Press <b>Space</b> or click Resume. The observer is paused too.", "Resume", "", false);
+}
+function resume() {
+  if (S.state !== "paused") return;
+  S.state = "playing";
+  overlay.classList.add("hidden");
+}
+
+/* ---------- simulation ---------- */
+function desiredVelocity() {
+  if (pointer.active) {
+    const dx = pointer.x - S.P.x, dy = pointer.y - S.P.y, d = hyp(dx, dy);
+    if (d < 0.04) return [0, 0];
+    const sp = Math.min(G.VMAX, G.KP * d);
+    return [sp * dx / d, sp * dy / d];
+  }
+  const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const iy = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+  const n = hyp(ix, iy);
+  return n ? [G.VMAX * ix / n, G.VMAX * iy / n] : [0, 0];
+}
+
+function update(dt) {
+  // effects keep animating in every state
+  for (let i = S.sparks.length - 1; i >= 0; i--) {
+    const p = S.sparks[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= Math.exp(-3 * dt); p.vy *= Math.exp(-3 * dt);
+    p.life -= p.decay * dt;
+    if (p.life <= 0) S.sparks.splice(i, 1);
+  }
+  for (let i = S.floaters.length - 1; i >= 0; i--) {
+    const f = S.floaters[i];
+    f.y += 0.9 * dt; f.life -= 0.7 * dt;
+    if (f.life <= 0) S.floaters.splice(i, 1);
+  }
+  if (S.flash > 0) S.flash = Math.max(0, S.flash - dt * 2.5);
+  if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 2.4);
+  if (S.banner) { S.banner.life -= dt; if (S.banner.life <= 0) S.banner = null; }
+  if (S.state !== "playing") return;
+
+  // player
+  const P = S.P, vd = desiredVelocity(), k = 1 - Math.exp(-G.ACC * dt);
+  P.vx += (vd[0] - P.vx) * k; P.vy += (vd[1] - P.vy) * k;
+  P.x += P.vx * dt; P.y += P.vy * dt;
+  const maxR = G.RIM - G.PR, n = hyp(P.x, P.y);
+  if (n > maxR) {
+    const ux = P.x / n, uy = P.y / n;
+    P.x = ux * maxR; P.y = uy * maxR;
+    const vr = P.vx * ux + P.vy * uy;
+    if (vr > 0) { P.vx -= vr * ux; P.vy -= vr * uy; }
+  }
+
+  // the observer samples your position at 10 Hz and updates its belief
+  S.obsAcc += dt;
+  while (S.obsAcc >= CFG.dt) {
+    S.obsAcc -= CFG.dt;
+    observe();
+    S.filt.update(S.obs);
+    afterFilter();
+  }
+
+  // clock + stealth
+  S.roundT += dt;
+  if (S.conf < 0.5) S.stealthT += dt;
+  if (S.invuln > 0) S.invuln -= dt;
+
+  // holding the goal? progress builds inside the circle and slowly drains outside
+  if (hyp(P.x - S.goal.x, P.y - S.goal.y) <= S.goal.r) {
+    S.hold += dt;
+    if (S.hold >= S.holdNeed) { clearRound(); return; }
+  } else if (S.hold > 0) S.hold = Math.max(0, S.hold - 0.5 * dt);
+  // out of time?
+  if (S.roundT >= S.deadline) {
+    loseLife("Time's up");
+    if (S.state === "playing") {
+      for (const b of S.balls) burst(b.x, b.y, TH.ballRGB, 4, 3);
+      S.balls = [];
+      newGoal();
+    }
+    return;
+  }
+
+  // shooter
+  if (S.calm > 0) S.calm -= dt;
+  else {
+    S.spawnT -= dt;
+    if (S.spawnT <= 0) { queueLaunch(); S.spawnT = spawnInterval(); }
+  }
+  for (let i = S.launches.length - 1; i >= 0; i--) {
+    const l = S.launches[i];
+    l.t -= dt;
+    if (l.t <= 0) { fire(l); S.launches.splice(i, 1); }
+  }
+
+  // balls
+  const hitR = G.BR + G.PR;
+  for (let i = S.balls.length - 1; i >= 0; i--) {
+    const b = S.balls[i];
+    b.trail.push([b.x, b.y]);
+    if (b.trail.length > 9) b.trail.shift();
+    if (b.rbpf && !b.passed) {
+      // the observer keeps refining its belief while the ball is in flight:
+      // pull the aim point toward the current inferred goal (only as hard as the belief is focused)
+      // and turn the ball toward it at a limited rate
+      const kA = (1 - Math.exp(-1.5 * dt)) * S.focus;
+      b.aim[0] += (S.est[0] - b.aim[0]) * kA;
+      b.aim[1] += (S.est[1] - b.aim[1]) * kA;
+      const sp = hyp(b.vx, b.vy), cur = Math.atan2(b.vy, b.vx);
+      let dA = Math.atan2(b.aim[1] - b.y, b.aim[0] - b.x) - cur;
+      while (dA > Math.PI) dA -= 2 * Math.PI;
+      while (dA < -Math.PI) dA += 2 * Math.PI;
+      const na = cur + clamp(dA, -G.HOME_TURN * dt, G.HOME_TURN * dt);
+      b.vx = sp * Math.cos(na); b.vy = sp * Math.sin(na);
+    }
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    if (!b.passed && ((b.aim[0] - b.x) * b.vx + (b.aim[1] - b.y) * b.vy < 0 || hyp(b.aim[0] - b.x, b.aim[1] - b.y) < 0.8)) b.passed = true;
+    if (b.passed) b.mark = Math.max(0, b.mark - dt * 3);
+    if (S.invuln <= 0 && hyp(b.x - P.x, b.y - P.y) < hitR) {
+      S.balls.splice(i, 1);
+      loseLife("Hit!");
+      if (S.state !== "playing") return;
+      continue;
+    }
+    if (hyp(b.x, b.y) > G.RIM + 2.2) S.balls.splice(i, 1);
+  }
+}
+
+/* ---------- rendering ---------- */
+let size = 600, dpr = 1;
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  size = Math.max(1, Math.min(rect.width, rect.height));
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(size * dpr);
+  canvas.height = Math.round(size * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+const X = x => (x + G.LIM) / (2 * G.LIM) * size;
+const Y = y => size - (y + G.LIM) / (2 * G.LIM) * size;
+const L = len => len / (2 * G.LIM) * size;
+let FONT_SANS = "sans-serif", FONT_SERIF = "Georgia, serif";
+const font = (px, w) => `${w || 600} ${px}px ${FONT_SANS}`;
+
+function drawStar(cx, cy, R, fill) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 === 0 ? R : R * 0.45;
+    const px = cx + rr * Math.cos(a), py = cy + rr * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+}
+
+let focusDisp = 0, estDisp = [0, 0];
+function drawBelief(dt) {
+  if (!S.filt) return;
+  // soft glow where the observer is looking (nothing while the belief is still diffuse)
+  ctx.save();
+  ctx.beginPath(); ctx.arc(X(0), Y(0), L(G.RIM), 0, 2 * Math.PI); ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(heatCanvas, 0, 0, size, size);
+  ctx.restore();
+
+  // thin reticle on the inferred goal, fading in only once the belief is focused
+  const k = 1 - Math.exp(-8 * dt);
+  focusDisp += (S.focus - focusDisp) * k;
+  estDisp[0] += (S.est[0] - estDisp[0]) * k;
+  estDisp[1] += (S.est[1] - estDisp[1]) * k;
+  const a = clamp((focusDisp - 0.25) / 0.5, 0, 1);
+  if (a <= 0.01) return;
+  const ex = X(estDisp[0]), ey = Y(estDisp[1]), r = Math.max(7, size * 0.015);
+  ctx.strokeStyle = `rgba(${TH.estRGB},${0.75 * a})`; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.arc(ex, ey, r, 0, 2 * Math.PI); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(ex - r * 1.6, ey); ctx.lineTo(ex - r * 0.6, ey);
+  ctx.moveTo(ex + r * 0.6, ey); ctx.lineTo(ex + r * 1.6, ey);
+  ctx.moveTo(ex, ey - r * 1.6); ctx.lineTo(ex, ey - r * 0.6);
+  ctx.moveTo(ex, ey + r * 0.6); ctx.lineTo(ex, ey + r * 1.6);
+  ctx.stroke();
+}
+
+function drawGoal(now) {
+  const g = S.goal, gx = X(g.x), gy = Y(g.y), gr = L(g.r);
+  const pulse = 0.5 + 0.5 * Math.sin(now * 0.005);
+  ctx.fillStyle = `rgba(${TH.goal},${0.08 + 0.05 * pulse})`;
+  ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = `rgba(${TH.goal},0.95)`; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 2 * Math.PI); ctx.stroke();
+  if (S.hold > 0) {
+    const fr = clamp(S.hold / S.holdNeed, 0, 1);
+    ctx.fillStyle = `rgba(${TH.goal},0.32)`;
+    ctx.beginPath(); ctx.moveTo(gx, gy);
+    ctx.arc(gx, gy, gr, -Math.PI / 2, -Math.PI / 2 + fr * 2 * Math.PI); ctx.closePath(); ctx.fill();
+  }
+  drawStar(gx, gy, Math.max(7, size * 0.016), `rgb(${TH.goal})`);
+
+  // deadline ring
+  if (S.state !== "ready") {
+    const frac = clamp(1 - S.roundT / S.deadline, 0, 1);
+    const col = frac > 0.4 ? `rgba(${TH.goal},0.9)` : frac > 0.2 ? "rgba(245,158,11,0.95)" : `rgba(${TH.ballRGB},0.95)`;
+    const rr = gr + L(0.42);
+    ctx.strokeStyle = `rgba(${TH.goal},0.15)`; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.arc(gx, gy, rr, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = col; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(gx, gy, rr, -Math.PI / 2, -Math.PI / 2 + frac * 2 * Math.PI); ctx.stroke();
+    ctx.lineCap = "butt";
+    const left = Math.max(0, S.deadline - S.roundT);
+    ctx.fillStyle = col; ctx.font = font(Math.max(11, size * 0.022), 700); ctx.textAlign = "center";
+    ctx.fillText(Math.ceil(left) + "s", gx, gy - rr - 6);
+    ctx.textAlign = "left";
+  }
+}
+
+function drawLaunches(now) {
+  for (const l of S.launches) {
+    const prog = clamp(1 - l.t / l.T, 0, 1);
+    const cx = X(G.RIM * Math.cos(l.ang)), cy = Y(G.RIM * Math.sin(l.ang));
+    ctx.strokeStyle = `rgba(${TH.ballRGB},${0.3 + 0.7 * prog})`;
+    ctx.lineWidth = 3 + 3 * prog; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(X(0), Y(0), L(G.RIM), -l.ang - 0.12, -l.ang + 0.12);
+    ctx.stroke(); ctx.lineCap = "butt";
+    ctx.fillStyle = `rgba(${TH.ballRGB},${0.25 + 0.6 * prog})`;
+    ctx.beginPath(); ctx.arc(cx, cy, L(G.BR) * (0.6 + 0.8 * prog) + 1.5 * Math.sin(now * 0.03), 0, 2 * Math.PI); ctx.fill();
+  }
+}
+
+function drawBalls() {
+  const br = L(G.BR);
+  for (const b of S.balls) {
+    // small, faint aim tick: where this ball is headed
+    if (b.rbpf && b.mark > 0 && S.showBelief) {
+      const ax = X(b.aim[0]), ay = Y(b.aim[1]), s = Math.max(2.5, size * 0.005);
+      ctx.strokeStyle = `rgba(${TH.estRGB},${0.45 * b.mark})`; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(ax - s, ay - s); ctx.lineTo(ax + s, ay + s); ctx.moveTo(ax - s, ay + s); ctx.lineTo(ax + s, ay - s); ctx.stroke();
+      ctx.lineCap = "butt";
+    }
+    // trail
+    for (let i = 1; i < b.trail.length; i++) {
+      const a = i / b.trail.length;
+      ctx.strokeStyle = `rgba(${TH.ballRGB},${0.28 * a})`;
+      ctx.lineWidth = br * 2 * a; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(X(b.trail[i - 1][0]), Y(b.trail[i - 1][1])); ctx.lineTo(X(b.trail[i][0]), Y(b.trail[i][1])); ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+    const bx = X(b.x), by = Y(b.y);
+    if (TH.glow) {
+      const g = ctx.createRadialGradient(bx, by, 0, bx, by, br * 3);
+      g.addColorStop(0, `rgba(${TH.ballRGB},0.35)`); g.addColorStop(1, `rgba(${TH.ballRGB},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, br * 3, 0, 2 * Math.PI); ctx.fill();
+    }
+    const body = ctx.createRadialGradient(bx - br * 0.35, by - br * 0.35, br * 0.1, bx, by, br);
+    body.addColorStop(0, TH.ballHi); body.addColorStop(0.45, TH.ball); body.addColorStop(1, TH.ball);
+    ctx.fillStyle = body; ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fill();
+  }
+}
+
+function drawPlayer(now) {
+  const P = S.P, px = X(P.x), py = Y(P.y), pr = L(G.PR);
+  if (S.invuln > 0 && Math.floor(now / 90) % 2 === 0) return;
+  if (TH.glow) {
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr * 3.2);
+    g.addColorStop(0, `rgba(${TH.playerRGB},0.4)`); g.addColorStop(1, `rgba(${TH.playerRGB},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, pr * 3.2, 0, 2 * Math.PI); ctx.fill();
+  }
+  ctx.fillStyle = TH.player; ctx.strokeStyle = TH.stroke; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(px, py, pr, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  const sp = hyp(P.vx, P.vy);
+  if (sp > 0.3) {
+    const ux = P.vx / sp, uy = -P.vy / sp;
+    ctx.fillStyle = TH.stroke;
+    ctx.beginPath(); ctx.arc(px + ux * pr * 0.45, py + uy * pr * 0.45, pr * 0.26, 0, 2 * Math.PI); ctx.fill();
+  }
+  if (pointer.active && S.state === "playing") {
+    ctx.strokeStyle = `rgba(${TH.playerRGB},0.45)`; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(X(pointer.x), Y(pointer.y), 7, 0, 2 * Math.PI); ctx.stroke();
+  }
+}
+
+function render(now, dt) {
+  ctx.fillStyle = TH.base; ctx.fillRect(0, 0, size, size);
+  ctx.save();
+  if (S.shake > 0) { const s = S.shake * S.shake * 9; ctx.translate((RNG.random() - 0.5) * s, (RNG.random() - 0.5) * s); }
+
+  // arena
+  const cx = X(0), cy = Y(0), R = L(G.RIM);
+  const bg = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R);
+  bg.addColorStop(0, TH.arenaA); bg.addColorStop(1, TH.arenaB);
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
+  ctx.setLineDash([2, 5]); ctx.strokeStyle = TH.rim; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+
+  if (S.showBelief) drawBelief(dt);
+  drawGoal(now);
+  drawLaunches(now);
+  drawBalls();
+  drawPlayer(now);
+
+  // sparks
+  for (const p of S.sparks) {
+    ctx.fillStyle = `rgba(${p.rgb},${Math.max(0, p.life)})`;
+    ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), Math.max(0.5, 3.2 * p.life * size / 600), 0, 2 * Math.PI); ctx.fill();
+  }
+  // floating text
+  ctx.textAlign = "center";
+  for (const f of S.floaters) {
+    ctx.fillStyle = `rgba(${f.rgb},${Math.max(0, Math.min(1, f.life * 1.4))})`;
+    ctx.font = font(Math.max(12, size * 0.026), 700);
+    ctx.fillText(f.text, X(f.x), Y(f.y));
+  }
+  // banner
+  if (S.banner) {
+    const a = Math.min(1, S.banner.life / 0.4);
+    ctx.fillStyle = TH.text; ctx.globalAlpha = a;
+    ctx.font = `600 ${Math.max(18, size * 0.05)}px ${FONT_SERIF}`;
+    ctx.fillText(S.banner.text, cx, Y(G.RIM * 0.62));
+    ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = "left";
+  ctx.restore();
+
+  if (S.flash > 0) {
+    ctx.fillStyle = `rgba(${TH.ballRGB},${0.22 * S.flash})`;
+    ctx.fillRect(0, 0, size, size);
+  }
+}
+
+/* ---------- HUD + side panel ---------- */
+const hud = { round: $("hud-round"), score: $("hud-score"), lives: $("hud-lives"), clock: $("hud-clock"), best: $("hud-best") };
+const side = { conf: $("conf-val"), fill: $("conf-fill"), err: $("err-val"), stealth: $("stealth-val"), desc: $("mode-desc") };
+const lastTxt = {};
+function setText(el, key, txt) { if (lastTxt[key] !== txt) { el.textContent = txt; lastTxt[key] = txt; } }
+function updateHud(force) {
+  if (force) for (const k in lastTxt) delete lastTxt[k];
+  setText(hud.round, "round", String(S.round));
+  setText(hud.score, "score", String(S.score));
+  setText(hud.lives, "lives", "♥".repeat(Math.max(0, S.lives)) + "♡".repeat(Math.max(0, G.LIVES - S.lives)));
+  const left = S.state === "ready" ? null : Math.max(0, S.deadline - S.roundT);
+  setText(hud.clock, "clock", left === null ? "–" : left.toFixed(1) + "s");
+  hud.clock.classList.toggle("warn", left !== null && left < 3);
+  setText(hud.best, "best", String(bestCache[S.rbpf ? "rbpf" : "classic"]));
+  const c = clamp(S.conf, 0, 1);
+  setText(side.conf, "conf", S.filt ? Math.round(c * 100) + "%" : "–");
+  side.fill.style.width = (c * 100).toFixed(1) + "%";
+  side.fill.style.background = `hsl(${140 - 140 * c}, 68%, 46%)`;
+  setText(side.err, "err", isFinite(S.estErr) ? S.estErr.toFixed(1) + " u" : "–");
+  setText(side.stealth, "stealth", S.roundT > 0.05 ? Math.round(100 * S.stealthT / S.roundT) + "%" : "–");
+}
+function syncModeUi() {
+  swRbpf.checked = S.rbpf;
+  swBelief.checked = S.showBelief;
+  side.desc.innerHTML = S.rbpf
+    ? "Every shot is fired at a goal drawn from the observer's belief and keeps bending toward its latest guess. The balls charge at <b>where it thinks you're going</b>."
+    : "Classic dodgeball: every shot is fired at the observer's latest noisy sighting of <b>you</b>, often leading your motion.";
+  updateHud(true);
+}
+
+/* ---------- input ---------- */
+const KEYMAP = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+function setRbpf(on) {
+  if (on === S.rbpf) return;
+  S.rbpf = on;
+  store.set("dodge.rbpf", on ? "1" : "0");
+  if (S.state === "playing" || S.state === "paused") S.runMixed = true;
+  syncModeUi();
+}
+function setBelief(on) {
+  S.showBelief = on;
+  store.set("dodge.belief", on ? "1" : "0");
+  syncModeUi();
+}
+swRbpf.addEventListener("change", () => { setRbpf(swRbpf.checked); swRbpf.blur(); });
+swBelief.addEventListener("change", () => { setBelief(swBelief.checked); swBelief.blur(); });
+
+window.addEventListener("keydown", e => {
+  if (e.target && (e.target.tagName === "INPUT" && e.target.type === "text")) return;
+  const k = e.key.toLowerCase();
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "spacebar"].includes(k)) e.preventDefault();
+  if (k === " " || k === "spacebar") { if (S.state === "playing") pause(); else if (S.state === "paused") resume(); else start(); return; }
+  if (k === "r") { start(); return; }
+  if (k === "enter") { if (S.state === "paused") resume(); else if (S.state !== "playing") start(); return; }
+  if (k === "i") { setRbpf(!S.rbpf); return; }
+  if (k === "b") { setBelief(!S.showBelief); return; }
+  const dir = KEYMAP[k];
+  if (dir) {
+    keys[dir] = true;
+    if (S.state === "ready" || S.state === "over") start();
+    else if (S.state === "paused") resume();
+  }
+}, { passive: false });
+window.addEventListener("keyup", e => { const dir = KEYMAP[e.key.toLowerCase()]; if (dir) keys[dir] = false; });
+window.addEventListener("blur", () => { keys.up = keys.down = keys.left = keys.right = false; pointer.active = false; });
+
+function pointerWorld(ev) {
+  const r = canvas.getBoundingClientRect();
+  const px = (ev.clientX - r.left) / r.width, py = (ev.clientY - r.top) / r.height;
+  return [px * 2 * G.LIM - G.LIM, G.LIM - py * 2 * G.LIM];
+}
+canvas.addEventListener("pointerdown", ev => {
+  if (S.state !== "playing") return;
+  ev.preventDefault();
+  const w = pointerWorld(ev);
+  pointer.active = true; pointer.id = ev.pointerId; pointer.x = w[0]; pointer.y = w[1];
+  try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+});
+canvas.addEventListener("pointermove", ev => {
+  if (!pointer.active || ev.pointerId !== pointer.id) return;
+  const w = pointerWorld(ev); pointer.x = w[0]; pointer.y = w[1];
+});
+function endPointer(ev) { if (ev.pointerId === pointer.id) pointer.active = false; }
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
+
+ovBtn.addEventListener("click", () => { if (S.state === "paused") resume(); else start(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+
+/* ---------- theme toggle ---------- */
+const tbtn = $("theme-toggle");
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  TH = THEMES[t];
+  updateHeat();
+  const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = t === "dark" ? "#060608" : "#ffffff";
+  tbtn.setAttribute("aria-label", t === "dark" ? "Switch to light mode" : "Switch to dark mode");
+}
+tbtn.addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  try { localStorage.setItem("theme", next); } catch (e) {}
+  applyTheme(next);
+});
+
+/* ---------- loop ---------- */
+let lastTs = 0;
+function frame(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  if (Math.min(window.devicePixelRatio || 1, 2) !== dpr) resize();
+  update(dt);
+  render(ts, dt);
+  updateHud(false);
+  requestAnimationFrame(frame);
+}
+
+function boot() {
+  const cs = getComputedStyle(document.body);
+  FONT_SANS = cs.fontFamily || FONT_SANS;
+  FONT_SERIF = (cs.getPropertyValue("--font-serif") || "").trim() || FONT_SERIF;
+  applyTheme(currentTheme());
+  resize();
+  resetGame();
+  S.banner = null;
+  S.state = "ready";
+  syncModeUi();
+  showOverlay("Ready?", "Reach the <b>★ goal</b> and hold it for half a second before its clock runs out, without getting hit. An observer is watching your noisy position the whole time.", "Play", "", true);
+  requestAnimationFrame(frame);
+}
+window.addEventListener("resize", resize);
+if (document.readyState === "complete") boot();
+else window.addEventListener("load", boot);
+
+// test hook for automated checks (harmless in normal play)
+window.__dodge = { S, G, CFG, start, keys, pointer, tick(dt) { update(dt); render(performance.now(), dt); updateHud(false); } };
+})();
+</script>
+</body>
+</html>
