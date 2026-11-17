@@ -206,6 +206,9 @@
   .legend i{ display:inline-block; width:12px; height:12px; border-radius:50%; flex-shrink:0; }
   .legend .glow-swatch{ background:radial-gradient(circle, var(--est) 0%, transparent 72%); }
   .legend .reticle-swatch{ border:1.5px solid var(--est); background:transparent; }
+  .legend .aim-swatch{ border-radius:0; transform:rotate(45deg); background:
+      linear-gradient(var(--est), var(--est)) center / 100% 1.5px no-repeat,
+      linear-gradient(var(--est), var(--est)) center / 1.5px 100% no-repeat; opacity:.75; }
 
   .links{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .links a{
@@ -299,13 +302,14 @@
           <div class="legend">
             <span><i class="glow-swatch"></i>observer's focus</span>
             <span><i class="reticle-swatch"></i>inferred goal</span>
+            <span><i class="aim-swatch"></i>where a shot expects you</span>
           </div>
         </div>
 
         <div class="card">
           <h3>What's going on</h3>
           <p>The observer only sees your position, with noise, ten times a second. It runs the <b>Rao-Blackwellized particle filter</b> from the IFAC 2026 paper: 1,500 hypotheses about your goal, each assuming you're a stabilizing agent heading there, reweighted by how well it predicts your next step.</p>
-          <p>Heading straight for the ★ gives it away, because <b>stability itself is the leak</b>. The CDC 2026 paper's counter-move is to keep the belief ambiguous while still arriving on time. Try a decoy, then cut in late.</p>
+          <p>Heading straight for the ★ gives it away, because <b>stability itself is the leak</b>: once it knows your goal, it knows where you'll be on the way and where you'll stop. The CDC 2026 paper's counter-move is to keep the belief ambiguous while still arriving on time. Curve in rather than beelining.</p>
           <div class="links">
             <a href="https://arxiv.org/abs/2512.09269" target="_blank" rel="noopener">IFAC 2026 paper</a>
             <a href="https://arxiv.org/abs/2605.06630" target="_blank" rel="noopener">CDC 2026 paper</a>
@@ -542,15 +546,15 @@ class RBPF {
     }
     return m;
   }
-  // draw one goal hypothesis from the posterior (what the shooter fires at)
-  sampleGoal(rng) {
+  // draw one hypothesis (particle index) from the posterior
+  sampleIndex(rng) {
     const u = rng.random();
     let c = 0;
     for (let i = 0; i < this.N; i++) {
       c += Math.exp(this.logW[i]);
-      if (c >= u) return [this.gx[i], this.gy[i]];
+      if (c >= u) return i;
     }
-    return [this.gx[this.N - 1], this.gy[this.N - 1]];
+    return this.N - 1;
   }
 }
 
@@ -561,14 +565,13 @@ const G = {
   LIM: 12.9,       // half-width of the view, world units
   RIM: 12.0,       // arena radius = the filter's workspace radius R
   PR: 0.42,        // player radius
-  BR: 0.38,        // ball radius
+  BR: 0.34,        // ball radius
   VMAX: 4.0,       // player top speed (units / s)
   ACC: 16,         // velocity smoothing rate
   KP: 2.4,         // pointer-follow gain: velocity = KP * (pointer - x), capped at VMAX
-  TELE: 0.45,      // launch wind-up (s)
+  TELE: 0.65,      // launch wind-up (s)
   LIVES: 3,
   INVULN: 1.0,
-  HOME_TURN: 0.9,  // RBPF balls: max turn rate toward the observer's latest estimate (rad / s)
 };
 
 const $ = id => document.getElementById(id);
@@ -594,7 +597,7 @@ const S = {
   filt: null, obsAcc: 0,
   conf: 0, focus: 0, est: [0, 0, 1], estErr: NaN,
   balls: [], launches: [], sparks: [], floaters: [],
-  spawnT: 0, calm: 0, invuln: 0, flash: 0, shake: 0,
+  spawnT: 0, invuln: 0, flash: 0, shake: 0,
   banner: null, runMixed: false, endReason: "",
 };
 
@@ -624,13 +627,13 @@ const hyp = Math.hypot;
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 function observe() {
   S.obs = [S.P.x + CFG.errStd * RNG.gauss(), S.P.y + CFG.errStd * RNG.gauss()];
-  // the classic shooter's velocity estimate: finite difference over the last 0.3 s of sightings
-  const h = S.obsHist;
+  // the shooter's velocity estimate: finite difference over the last 0.5 s of sightings
+  const h = S.obsHist, n = 6;
   h.push(S.obs);
-  if (h.length > 4) h.shift();
-  if (h.length === 4) {
-    const span = 3 * CFG.dt;
-    S.vEst = [(h[3][0] - h[0][0]) / span, (h[3][1] - h[0][1]) / span];
+  if (h.length > n) h.shift();
+  if (h.length === n) {
+    const span = (n - 1) * CFG.dt;
+    S.vEst = [(h[n - 1][0] - h[0][0]) / span, (h[n - 1][1] - h[0][1]) / span];
   }
 }
 const bestCache = {
@@ -663,7 +666,7 @@ function newGoal() {
   S.deadline = Math.ceil(d / G.VMAX * slack + 2.5 + S.holdNeed);
   S.roundT = 0; S.stealthT = 0; S.hold = 0;
   S.launches = [];
-  S.calm = 0.6; S.spawnT = 0.15;
+  S.spawnT = 0;   // first shot winds up as soon as the round starts
   resetFilter();
 }
 function resetGame() {
@@ -677,47 +680,72 @@ function resetGame() {
 }
 
 function spawnInterval() {
-  const base = Math.max(0.28, 0.8 - 0.05 * (S.round - 1));
-  return S.rbpf ? base * 0.65 : base;
+  const base = Math.max(0.45, 1.25 - 0.06 * (S.round - 1));
+  return S.rbpf ? base * 1.25 : base;   // the predicting shooter is sharper, so it fires a bit less often
 }
-function ballSpeed() { return Math.min(12, 7.5 + 0.4 * (S.round - 1)); }
-// balls per volley: occasional pairs from round 1, triples from round 3
+function ballSpeed() { return Math.min(9, 5.5 + 0.25 * (S.round - 1)); }
+// balls per volley: occasional pairs from round 1, triples from round 4
 function volleySize() {
   const r = S.round, u = RNG.random();
-  const p3 = r >= 3 ? Math.min(0.3, 0.08 * (r - 2)) : 0;
-  const p2 = Math.min(0.55, 0.15 + 0.1 * (r - 1));
+  const p3 = r >= 4 ? Math.min(0.25, 0.06 * (r - 3)) : 0;
+  const p2 = Math.min(0.45, 0.05 + 0.08 * (r - 1));
   return u < p3 ? 3 : u < p3 + p2 ? 2 : 1;
 }
 
-// where the shooter wants the ball to go right now
-function currentAim(lead, fromX, fromY) {
-  if (S.rbpf) return S.filt.sampleGoal(RNG);         // a goal hypothesis drawn from the belief
+// Where the shooter wants a ball from (sx, sy) to go. The aim is committed when the launcher starts
+// winding up, `wait` seconds before the ball leaves, so it is a prediction over wind-up + flight.
+function aimFor(lead, sx, sy, wait) {
+  if (S.rbpf) return predictedAim(sx, sy, wait);
   // classic: the latest (noisy) sighting of you, optionally led along your estimated velocity
   const o = S.obs;
   if (!lead) return [o[0], o[1]];
-  const tau = hyp(o[0] - fromX, o[1] - fromY) / ballSpeed();
+  const tau = wait + hyp(o[0] - sx, o[1] - sy) / ballSpeed();
   let ax = o[0] + S.vEst[0] * tau * lead, ay = o[1] + S.vEst[1] * tau * lead;
   const n = hyp(ax, ay), m = G.RIM - G.PR;
   if (n > m) { ax *= m / n; ay *= m / n; }
   return [ax, ay];
 }
+// RBPF shooter: draw a goal hypothesis from the observer's belief and predict where you will be
+// when the ball gets there if that hypothesis is right: still heading for that goal at your current
+// pace (your speed toward it over the last half second), stopping once you are inside it.
+// The flight time and your travel time are solved together, so the ball meets you on the way.
+function predictedAim(sx, sy, wait) {
+  const f = S.filt, i = f.sampleIndex(RNG);
+  const ox = S.obs[0], oy = S.obs[1];
+  const dx = f.gx[i] - ox, dy = f.gy[i] - oy, dist = hyp(dx, dy);
+  if (dist < 1e-6) return [ox, oy];
+  const ux = dx / dist, uy = dy / dist;
+  const run = Math.max(0, dist - Math.min(0.5 * f.radii[i], 0.8));   // how far you go before stopping
+  const pace = clamp(S.vEst[0] * ux + S.vEst[1] * uy, 0, G.VMAX);
+  const sp = ballSpeed();
+  let px = ox, py = oy, flight = hyp(ox - sx, oy - sy) / sp;
+  for (let k = 0; k < 8; k++) {
+    const s = Math.min(run, pace * (wait + flight));
+    px = ox + ux * s; py = oy + uy * s;
+    flight = hyp(px - sx, py - sy) / sp;
+  }
+  return [px, py];
+}
 function queueLaunch() {
-  const aim = currentAim(0, 0, 0);
+  // launch from somewhere on the rim at least 7 units from your last sighting
+  const o = S.obs;
   let ang = 0;
   for (let k = 0; k < 14; k++) {
     ang = RNG.random() * 2 * Math.PI;
-    if (hyp(G.RIM * Math.cos(ang) - aim[0], G.RIM * Math.sin(ang) - aim[1]) > 7) break;
+    if (hyp(G.RIM * Math.cos(ang) - o[0], G.RIM * Math.sin(ang) - o[1]) > 7) break;
   }
   const n = volleySize();
   for (let j = 0; j < n; j++) {
     const T = G.TELE + 0.12 * j;
     const lead = RNG.random() < 0.6 ? 0.4 + 0.6 * RNG.random() : 0;
-    S.launches.push({ ang: ang + (j - (n - 1) / 2) * 0.32, t: T, T, lead });
+    const a = ang + (j - (n - 1) / 2) * 0.32;
+    const aim = aimFor(lead, (G.RIM + 0.5) * Math.cos(a), (G.RIM + 0.5) * Math.sin(a), T);
+    S.launches.push({ ang: a, t: T, T, aim });
   }
 }
 function fire(l) {
   const sx = (G.RIM + 0.5) * Math.cos(l.ang), sy = (G.RIM + 0.5) * Math.sin(l.ang);
-  const aim = currentAim(l.lead, sx, sy);
+  const aim = l.aim;
   let dx = aim[0] - sx, dy = aim[1] - sy, d = hyp(dx, dy);
   if (d < 1e-6) { dx = -sx; dy = -sy; d = hyp(dx, dy); }
   const sp = ballSpeed();
@@ -932,11 +960,8 @@ function update(dt) {
   }
 
   // shooter
-  if (S.calm > 0) S.calm -= dt;
-  else {
-    S.spawnT -= dt;
-    if (S.spawnT <= 0) { queueLaunch(); S.spawnT = spawnInterval(); }
-  }
+  S.spawnT -= dt;
+  if (S.spawnT <= 0) { queueLaunch(); S.spawnT = spawnInterval(); }
   for (let i = S.launches.length - 1; i >= 0; i--) {
     const l = S.launches[i];
     l.t -= dt;
@@ -949,20 +974,6 @@ function update(dt) {
     const b = S.balls[i];
     b.trail.push([b.x, b.y]);
     if (b.trail.length > 9) b.trail.shift();
-    if (b.rbpf && !b.passed) {
-      // the observer keeps refining its belief while the ball is in flight:
-      // pull the aim point toward the current inferred goal (only as hard as the belief is focused)
-      // and turn the ball toward it at a limited rate
-      const kA = (1 - Math.exp(-1.5 * dt)) * S.focus;
-      b.aim[0] += (S.est[0] - b.aim[0]) * kA;
-      b.aim[1] += (S.est[1] - b.aim[1]) * kA;
-      const sp = hyp(b.vx, b.vy), cur = Math.atan2(b.vy, b.vx);
-      let dA = Math.atan2(b.aim[1] - b.y, b.aim[0] - b.x) - cur;
-      while (dA > Math.PI) dA -= 2 * Math.PI;
-      while (dA < -Math.PI) dA += 2 * Math.PI;
-      const na = cur + clamp(dA, -G.HOME_TURN * dt, G.HOME_TURN * dt);
-      b.vx = sp * Math.cos(na); b.vy = sp * Math.sin(na);
-    }
     b.x += b.vx * dt; b.y += b.vy * dt;
     if (!b.passed && ((b.aim[0] - b.x) * b.vx + (b.aim[1] - b.y) * b.vy < 0 || hyp(b.aim[0] - b.x, b.aim[1] - b.y) < 0.8)) b.passed = true;
     if (b.passed) b.mark = Math.max(0, b.mark - dt * 3);
@@ -1203,7 +1214,7 @@ function syncModeUi() {
   swRbpf.checked = S.rbpf;
   swBelief.checked = S.showBelief;
   side.desc.innerHTML = S.rbpf
-    ? "Every shot is fired at a goal drawn from the observer's belief and keeps bending toward its latest guess. The balls charge at <b>where it thinks you're going</b>."
+    ? "Every shot is aimed at <b>where the observer predicts you'll be</b> when the ball arrives: it draws a goal from its belief, assumes you keep heading there at your current pace, and that you stop once inside."
     : "Classic dodgeball: every shot is fired at the observer's latest noisy sighting of <b>you</b>, often leading your motion.";
   updateHud(true);
 }
@@ -1313,7 +1324,7 @@ if (document.readyState === "complete") boot();
 else window.addEventListener("load", boot);
 
 // test hook for automated checks (harmless in normal play)
-window.__dodge = { S, G, CFG, start, keys, pointer, tick(dt) { update(dt); render(performance.now(), dt); updateHud(false); } };
+window.__dodge = { S, G, CFG, start, keys, pointer, step(dt) { update(dt); }, tick(dt) { update(dt); render(performance.now(), dt); updateHud(false); } };
 })();
 </script>
 </body>
